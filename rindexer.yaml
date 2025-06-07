@@ -14,8 +14,7 @@ contracts:
   details:
   - network: gnosis
     address: 0x7E9BaF7CC7cD83bACeFB9B2D5c5124C0F9c30834
-    start_block: '40431287'
-    end_block: '40463902'
+    start_block: '40352121'
   abi: ./abis/SubscriptionManager.abi.json
   include_events:
   - SubscriptionCreated

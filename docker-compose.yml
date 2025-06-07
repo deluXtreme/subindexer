@@ -13,3 +13,14 @@ services:
       - 5440:5432
     env_file:
       - ./.env
+  indexer:
+    image: ghcr.io/joshstevens19/rindexer
+    depends_on:
+      - postgresql
+    volumes:
+      - .:/app/project_path
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /app/project_path
+    command: ["start", "indexer"]
+    environment:
+      DATABASE_URL: postgres://postgres:rindexer@postgresql:5432/postgres
