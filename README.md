@@ -1,4 +1,44 @@
+# Subindexer API
 
+A Rust API server that exposes redeemable subscription data.
+
+## Setup
+
+1. Create a `.env` file in the root directory with the following content:
+```
+DATABASE_URL=postgres://username:password@localhost:5432/your_database
+```
+
+2. Install dependencies:
+```bash
+cargo build
+```
+
+3. Run the server:
+```bash
+cargo run
+```
+
+The server will start on `http://localhost:3000`
+
+## API Endpoints
+
+### GET /redeemable
+Returns a list of all redeemable subscriptions.
+
+Response format:
+```json
+[
+  {
+    "sub_id": "string",
+    "module": "string",
+    "subscriber": "string",
+    "recipient": "string",
+    "amount": 0,
+    "next_redeem_at": 0
+  }
+]
+```
 
 # Local Development
 
@@ -6,45 +46,4 @@ Database:
 
 ```sh
 docker-compose up -d
-```
-
-Indexer:
-
-```sh
-rindexer start indexer
-```
-
-
-Sample Queries
-
-```sql
-with active_subscriptions as (
-  SELECT active.sub_id, active.module, subscriber, recipient, amount
-  FROM subindexer_subscription_manager.subscription_created active
-  LEFT JOIN subindexer_subscription_manager.subscription_cancelled canceled
-    ON active.sub_id = canceled.sub_id 
-    AND active.module = canceled.module
-  WHERE canceled.sub_id IS NULL
-),
-
-latest_redemptions AS (
-  SELECT DISTINCT ON (sub_id, module)
-    sub_id,
-    module,
-    next_redeem_at
-  FROM subindexer_subscription_manager.redeemed
-  ORDER BY sub_id, module, next_redeem_at DESC
-)
-
--- Shows all relevant details for active subscriptions.
-SELECT
-  a.sub_id,
-  a.module,
-  a.subscriber,
-  a.recipient,
-  a.amount,
-  COALESCE(cast(r.next_redeem_at as Integer), 0) AS next_redeem_at
-FROM active_subscriptions a
-LEFT JOIN latest_redemptions r
-  ON a.sub_id = r.sub_id AND a.module = r.module;
 ```
