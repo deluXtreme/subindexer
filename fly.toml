@@ -1,0 +1,14 @@
+app = 'subindexer'
+
+primary_region = 'fra'
+
+[build]
+dockerfile = "Dockerfile"
+
+[env]
+# DATABASE_URL is expected to be set via `fly secrets set DATABASE_URL=...`
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
