@@ -1,2 +1,7 @@
 .rindexer
     generated_csv/**/*.txt
+
+
+# Added by cargo
+
+/target

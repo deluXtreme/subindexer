@@ -1,0 +1,9 @@
+fly.*
+.git/
+.github/
+target
+*.log
+.env
+node_modules
+.vscode
+.idea

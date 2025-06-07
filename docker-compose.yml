@@ -24,3 +24,14 @@ services:
     command: ["start", "indexer"]
     environment:
       DATABASE_URL: postgres://postgres:rindexer@postgresql:5432/postgres
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "3000:8080"
+    depends_on:
+      - postgresql
+    environment:
+      DATABASE_URL: postgres://postgres:rindexer@postgresql:5432/postgres
+      PORT: 8080
