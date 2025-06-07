@@ -1,5 +1,5 @@
 app = "subindexer-api"
-primary_region = "lax"
+primary_region = "fra"
 
 [build]
   dockerfile = "Dockerfile.api"
@@ -25,4 +25,9 @@ primary_region = "lax"
     handlers = ["http"]
   [[services.ports]]
     port = 443
-    handlers = ["tls", "http"] 
+    handlers = ["tls", "http"]
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1 

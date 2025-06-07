@@ -1,9 +1,9 @@
 mod db;
 mod models;
 
-use axum::{extract::State, routing::get, Json, Router};
+use axum::{Json, Router, extract::State, routing::get};
 use dotenv::dotenv;
-use sqlx::PgPool;
+use sqlx::{PgPool, postgres::PgPoolOptions};
 use std::net::SocketAddr;
 use tower_http::cors::{Any, CorsLayer};
 
@@ -17,7 +17,9 @@ async fn main() {
 
     // Database connection
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    let pool = PgPool::connect(&database_url)
+    let pool = PgPoolOptions::new()
+        .max_connections(2)
+        .connect(&database_url)
         .await
         .expect("Failed to connect to Postgres");
 
