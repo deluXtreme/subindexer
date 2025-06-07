@@ -1,0 +1,23 @@
+name: subindexer
+project_type: no-code
+networks:
+- name: gnosis
+  chain_id: 100
+  rpc: https://rpc.gnosischain.com/
+storage:
+  postgres:
+    enabled: true
+native_transfers:
+  enabled: false
+contracts:
+- name: SubscriptionManager
+  details:
+  - network: gnosis
+    address: 0x7E9BaF7CC7cD83bACeFB9B2D5c5124C0F9c30834
+    start_block: '40431287'
+    end_block: '40463902'
+  abi: ./abis/SubscriptionManager.abi.json
+  include_events:
+  - SubscriptionCreated
+  - SubscriptionCancelled
+  - Redeemed
