@@ -3,10 +3,10 @@ use sqlx::FromRow;
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct RedeemableSubscription {
-    pub sub_id: String,
-    pub module: String,
+    pub id: String,
     pub subscriber: String,
     pub recipient: String,
     pub amount: String,
+    pub trusted: bool,
     pub next_redeem_at: i32,
 }
