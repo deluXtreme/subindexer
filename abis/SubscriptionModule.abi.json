@@ -14,6 +14,19 @@
     },
     {
       "type": "function",
+      "name": "MULTISEND",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
       "name": "NAME",
       "inputs": [],
       "outputs": [
@@ -80,9 +93,9 @@
               "internalType": "uint256"
             },
             {
-              "name": "requireTrusted",
-              "type": "bool",
-              "internalType": "bool"
+              "name": "category",
+              "type": "uint8",
+              "internalType": "enum Category"
             }
           ]
         }
@@ -94,7 +107,7 @@
       "name": "getSubscriptionIds",
       "inputs": [
         {
-          "name": "safe",
+          "name": "subscriber",
           "type": "address",
           "internalType": "address"
         }
@@ -104,25 +117,6 @@
           "name": "",
           "type": "bytes32[]",
           "internalType": "bytes32[]"
-        }
-      ],
-      "stateMutability": "view"
-    },
-    {
-      "type": "function",
-      "name": "isTrustedRequired",
-      "inputs": [
-        {
-          "name": "id",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "",
-          "type": "bool",
-          "internalType": "bool"
         }
       ],
       "stateMutability": "view"
@@ -156,94 +150,13 @@
           "internalType": "bytes32"
         },
         {
-          "name": "flowVertices",
-          "type": "address[]",
-          "internalType": "address[]"
-        },
-        {
-          "name": "flow",
-          "type": "tuple[]",
-          "internalType": "struct TypeDefinitions.FlowEdge[]",
-          "components": [
-            {
-              "name": "streamSinkId",
-              "type": "uint16",
-              "internalType": "uint16"
-            },
-            {
-              "name": "amount",
-              "type": "uint192",
-              "internalType": "uint192"
-            }
-          ]
-        },
-        {
-          "name": "streams",
-          "type": "tuple[]",
-          "internalType": "struct TypeDefinitions.Stream[]",
-          "components": [
-            {
-              "name": "sourceCoordinate",
-              "type": "uint16",
-              "internalType": "uint16"
-            },
-            {
-              "name": "flowEdgeIds",
-              "type": "uint16[]",
-              "internalType": "uint16[]"
-            },
-            {
-              "name": "data",
-              "type": "bytes",
-              "internalType": "bytes"
-            }
-          ]
-        },
-        {
-          "name": "packedCoordinates",
+          "name": "data",
           "type": "bytes",
           "internalType": "bytes"
-        },
-        {
-          "name": "sourceCoordinate",
-          "type": "uint256",
-          "internalType": "uint256"
         }
       ],
       "outputs": [],
       "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "redeemUntrusted",
-      "inputs": [
-        {
-          "name": "id",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        }
-      ],
-      "outputs": [],
-      "stateMutability": "nonpayable"
-    },
-    {
-      "type": "function",
-      "name": "safeFromId",
-      "inputs": [
-        {
-          "name": "id",
-          "type": "bytes32",
-          "internalType": "bytes32"
-        }
-      ],
-      "outputs": [
-        {
-          "name": "safe",
-          "type": "address",
-          "internalType": "address"
-        }
-      ],
-      "stateMutability": "view"
     },
     {
       "type": "function",
@@ -265,9 +178,9 @@
           "internalType": "uint256"
         },
         {
-          "name": "requireTrusted",
-          "type": "bool",
-          "internalType": "bool"
+          "name": "category",
+          "type": "uint8",
+          "internalType": "enum Category"
         }
       ],
       "outputs": [
@@ -371,16 +284,10 @@
           "internalType": "address"
         },
         {
-          "name": "lastRedeemed",
+          "name": "nextRedeemAt",
           "type": "uint256",
           "indexed": false,
           "internalType": "uint256"
-        },
-        {
-          "name": "requireTrusted",
-          "type": "bool",
-          "indexed": false,
-          "internalType": "bool"
         }
       ],
       "anonymous": false
@@ -414,22 +321,35 @@
           "internalType": "uint256"
         },
         {
-          "name": "lastRedeemed",
+          "name": "nextRedeemAt",
           "type": "uint256",
           "indexed": false,
           "internalType": "uint256"
         },
         {
-          "name": "frequency",
-          "type": "uint256",
+          "name": "category",
+          "type": "uint8",
           "indexed": false,
-          "internalType": "uint256"
+          "internalType": "enum Category"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "Unsubscribed",
+      "inputs": [
+        {
+          "name": "id",
+          "type": "bytes32",
+          "indexed": true,
+          "internalType": "bytes32"
         },
         {
-          "name": "requireTrusted",
-          "type": "bool",
-          "indexed": false,
-          "internalType": "bool"
+          "name": "subscriber",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
         }
       ],
       "anonymous": false
@@ -452,6 +372,11 @@
     {
       "type": "error",
       "name": "InvalidAmount",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidCategory",
       "inputs": []
     },
     {
@@ -486,7 +411,7 @@
     },
     {
       "type": "error",
-      "name": "TrustedPathOnly",
+      "name": "OnlySubscriber",
       "inputs": []
     }
   ]

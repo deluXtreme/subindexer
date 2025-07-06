@@ -5,6 +5,9 @@ pub async fn get_redeemable_subscriptions(
     pool: &PgPool,
     current_timestamp: i32,
 ) -> Result<Vec<RedeemableSubscription>, sqlx::Error> {
+    // TODO: Use the SQL file instead of the inline query (requires fs).
+    // let query = fs::read_to_string("src/redeemable-subscriptions.sql")
+    // .expect("Failed to read redeemable-subscriptions.sql");
     let query = r#"
     WITH
     active_subscriptions as (

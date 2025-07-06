@@ -13,10 +13,11 @@ contracts:
 - name: SubscriptionModule
   details:
   - network: gnosis
-    address: TODO: Get new Address!
-    start_block: '40352121'
+    address: 0xD5dC464dD561782615D7495d1d7CEd301083c750
+    start_block: 40938210
   abi: ./abis/SubscriptionModule.abi.json
   include_events:
   - SubscriptionCreated
   - Unsubscribed
   - Redeemed
+  - RecipientUpdated
