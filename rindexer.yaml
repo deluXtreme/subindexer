@@ -10,13 +10,14 @@ storage:
 native_transfers:
   enabled: false
 contracts:
-- name: SubscriptionManager
+- name: SubscriptionModule
   details:
   - network: gnosis
-    address: 0x7E9BaF7CC7cD83bACeFB9B2D5c5124C0F9c30834
-    start_block: '40352121'
-  abi: ./abis/SubscriptionManager.abi.json
+    address: 0xD5dC464dD561782615D7495d1d7CEd301083c750
+    start_block: 40938210
+  abi: ./abis/SubscriptionModule.abi.json
   include_events:
   - SubscriptionCreated
-  - SubscriptionCancelled
+  - Unsubscribed
   - Redeemed
+  - RecipientUpdated

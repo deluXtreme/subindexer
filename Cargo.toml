@@ -14,3 +14,4 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 dotenv = "0.15"
 chrono = "0.4"
+hex = "0.4.3"
