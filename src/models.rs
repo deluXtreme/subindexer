@@ -3,7 +3,8 @@ use sqlx::FromRow;
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct RedeemableSubscription {
-    pub id: String,
+    #[serde(serialize_with = "hex::serialize")]
+    pub id: Vec<u8>,
     pub subscriber: String,
     pub recipient: String,
     pub amount: String,
@@ -12,16 +13,21 @@ pub struct RedeemableSubscription {
 }
 
 #[derive(Debug, Serialize, Deserialize, sqlx::Type)]
-#[sqlx(type_name = "integer", rename_all = "lowercase")]
+#[repr(i16)]
 #[serde(rename_all = "lowercase")]
 pub enum Category {
-    #[sqlx(rename = "0")]
-    #[serde(rename = "trusted")]
     Trusted = 0,
-    #[sqlx(rename = "1")]
-    #[serde(rename = "untrusted")]
     Untrusted = 1,
-    #[sqlx(rename = "2")]
-    #[serde(rename = "group")]
     Group = 2,
+}
+
+mod hex {
+    use serde::Serializer;
+
+    pub fn serialize<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&format!("0x{}", hex::encode(bytes)))
+    }
 }
