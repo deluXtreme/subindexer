@@ -13,7 +13,7 @@ contracts:
 - name: SubscriptionModule
   details:
   - network: gnosis
-    address: 0xD5dC464dD561782615D7495d1d7CEd301083c750
+    address: 0x48BC28f8757cF5dc38eE7219DFf1c1F2b768737D
     start_block: 40938210
   abi: ./abis/SubscriptionModule.abi.json
   include_events:
