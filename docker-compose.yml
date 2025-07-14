@@ -29,7 +29,7 @@ services:
       context: .
       dockerfile: Dockerfile.api
     ports:
-      - "3000:8080"
+      - "3030:8080"
     depends_on:
       - postgresql
     environment:

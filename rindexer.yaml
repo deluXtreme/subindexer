@@ -3,7 +3,7 @@ project_type: no-code
 networks:
 - name: gnosis
   chain_id: 100
-  rpc: https://rpc.gnosischain.com/
+  rpc: http://gnosis-erigon.dappnode:8545
 storage:
   postgres:
     enabled: true
