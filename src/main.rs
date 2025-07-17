@@ -70,6 +70,7 @@ async fn get_redeemable(State(pool): State<PgPool>) -> Json<Vec<models::Redeemab
 
 async fn health_check(State(pool): State<PgPool>) -> Json<serde_json::Value> {
     // Test database connectivity
+    tracing::info!("Health check");
     let db_healthy = (sqlx::query("SELECT 1").execute(&pool).await).is_ok();
 
     Json(serde_json::json!({
