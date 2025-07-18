@@ -52,6 +52,8 @@ async fn main() {
 async fn get_redeemable(State(pool): State<PgPool>) -> Json<Vec<models::RedeemableSubscription>> {
     let current_timestamp = chrono::Utc::now().timestamp() as i32;
     match db::get_redeemable_subscriptions(&pool, current_timestamp).await {
+        // The subscription amount may not be the currently redeemable amount.
+        // This can be evaluated by return (block.timestamp - sub.lastRedeemed) / sub.frequency * sub.amount;
         Ok(subscriptions) => Json(subscriptions),
         Err(sqlx::Error::Database(db_err))
             if db_err.code() == Some(std::borrow::Cow::Borrowed("42P01")) =>

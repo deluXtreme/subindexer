@@ -321,7 +321,7 @@
           "internalType": "uint256"
         },
         {
-          "name": "nextRedeemAt",
+          "name": "frequency",
           "type": "uint256",
           "indexed": false,
           "internalType": "uint256"
@@ -331,6 +331,12 @@
           "type": "uint8",
           "indexed": false,
           "internalType": "enum Category"
+        },
+        {
+          "name": "creationTimestamp",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
         }
       ],
       "anonymous": false
