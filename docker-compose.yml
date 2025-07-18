@@ -13,15 +13,22 @@ services:
       - 5440:5432
     env_file:
       - ./.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
   indexer:
     image: ghcr.io/joshstevens19/rindexer
     depends_on:
-      - postgresql
+      postgresql:
+        condition: service_healthy
     volumes:
       - .:/app/project_path
       - /var/run/docker.sock:/var/run/docker.sock
     working_dir: /app/project_path
-    command: ["start", "indexer"]
+    command: [ "start", "indexer"]
     environment:
       DATABASE_URL: postgres://postgres:rindexer@postgresql:5432/postgres
   api:
@@ -29,9 +36,12 @@ services:
       context: .
       dockerfile: Dockerfile.api
     ports:
-      - "3000:8080"
+      - "${API_PORT:-3000}:8080"
     depends_on:
-      - postgresql
+      postgresql:
+        condition: service_healthy
+    env_file:
+      - ./.env
     environment:
       DATABASE_URL: postgres://postgres:rindexer@postgresql:5432/postgres
       PORT: 8080

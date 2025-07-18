@@ -42,8 +42,16 @@ Response format:
 
 # Local Development
 
-Database:
-
 ```sh
-docker-compose up -d
+make up
+```
+
+Check for redeemable subscriptions:
+```sh
+curl http://localhost:3030/redeemable | jq
+```
+
+Check health
+```sh
+curl http://localhost:3030/health | jq
 ```
