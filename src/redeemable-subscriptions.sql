@@ -34,7 +34,7 @@ WITH
             a.subscriber,
             COALESCE(rp.new_recipient, a.recipient) AS recipient,
             -- Redeemable Amount: cf https://github.com/deluXtreme/subi-contracts/blob/65455f02e3e7a49654c51b9b5e805cccc1032168/src/SubscriptionModule.sol#L154-L158
-            (FLOOR((FLOOR(EXTRACT(EPOCH FROM now()))::NUMERIC - COALESCE(r.last_redeemed, creation_timestamp)) / a.frequency) * a.amount)::TEXT as amount,
+            (FLOOR((FLOOR(EXTRACT(EPOCH FROM now()))::NUMERIC - COALESCE(r.last_redeemed, creation_timestamp - frequency)) / a.frequency) * a.amount)::TEXT as amount,
             category,
             COALESCE(r.next_redeem_at, creation_timestamp) AS next_redeem_at
         FROM active_subscriptions a
