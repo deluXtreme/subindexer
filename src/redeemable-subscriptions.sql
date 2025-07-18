@@ -6,7 +6,7 @@ WITH
             recipient,
             amount::NUMERIC as amount,
             category,
-            frequency::NUMERIC as frequency,
+            frequency::INTEGER as frequency,
             creation_timestamp::INTEGER as creation_timestamp
         FROM subindexer_subscription_module.subscription_created active
                  LEFT JOIN subindexer_subscription_module.unsubscribed canceled
