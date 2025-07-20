@@ -18,6 +18,7 @@ pub async fn get_redeemable_subscriptions(
                 amount::NUMERIC as amount,
                 category,
                 frequency::INTEGER as frequency,
+                FLOOR(EXTRACT(EPOCH FROM now()))::NUMERIC as right_meow,
                 creation_timestamp::INTEGER as creation_timestamp
             FROM subindexer_subscription_module.subscription_created active
                     LEFT JOIN subindexer_subscription_module.unsubscribed canceled
@@ -27,8 +28,7 @@ pub async fn get_redeemable_subscriptions(
         latest_redemptions AS (
             SELECT DISTINCT ON (id)
                 id,
-                next_redeem_at::INTEGER as next_redeem_at,
-                block_number::INTEGER as last_redeemed
+                next_redeem_at::INTEGER as next_redeem_at
             FROM subindexer_subscription_module.redeemed
             ORDER BY id, next_redeem_at DESC
         ),
@@ -44,8 +44,9 @@ pub async fn get_redeemable_subscriptions(
                 a.id,
                 a.subscriber,
                 COALESCE(rp.new_recipient, a.recipient) AS recipient,
-                -- Redeemable Amount: cf https://github.com/deluXtreme/subi-contracts/blob/65455f02e3e7a49654c51b9b5e805cccc1032168/src/SubscriptionModule.sol#L154-L158
-                (FLOOR((FLOOR(EXTRACT(EPOCH FROM now()))::NUMERIC - COALESCE(r.last_redeemed, creation_timestamp - frequency)) / a.frequency) * a.amount)::TEXT as amount,
+                amount,
+                -- Redeemable Periods: cf https://github.com/deluXtreme/subi-contracts/blob/65455f02e3e7a49654c51b9b5e805cccc1032168/src/SubscriptionModule.sol#L154-L158
+                FLOOR((right_meow - COALESCE(r.next_redeem_at, creation_timestamp) + frequency) / a.frequency) as periods,
                 category,
                 COALESCE(r.next_redeem_at, creation_timestamp) AS next_redeem_at
             FROM active_subscriptions a

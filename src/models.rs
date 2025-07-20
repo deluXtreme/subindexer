@@ -8,6 +8,7 @@ pub struct RedeemableSubscription {
     pub subscriber: String,
     pub recipient: String,
     pub amount: String,
+    pub periods: i32,
     pub category: Category,
     pub next_redeem_at: i32,
 }
