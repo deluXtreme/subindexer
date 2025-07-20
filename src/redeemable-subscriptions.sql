@@ -4,10 +4,10 @@ WITH
             active.id,
             active.subscriber,
             recipient,
-            amount::NUMERIC as amount,
+            amount,
             category,
             frequency::INTEGER as frequency,
-            FLOOR(EXTRACT(EPOCH FROM now()))::NUMERIC as right_meow,
+            FLOOR(EXTRACT(EPOCH FROM now())) as right_meow,
             creation_timestamp::INTEGER as creation_timestamp
         FROM subindexer_subscription_module.subscription_created active
                  LEFT JOIN subindexer_subscription_module.unsubscribed canceled
@@ -35,7 +35,7 @@ WITH
             COALESCE(rp.new_recipient, a.recipient) AS recipient,
             amount,
             -- Redeemable Periods: cf https://github.com/deluXtreme/subi-contracts/blob/65455f02e3e7a49654c51b9b5e805cccc1032168/src/SubscriptionModule.sol#L154-L158
-            FLOOR((right_meow - COALESCE(r.next_redeem_at, creation_timestamp) + frequency) / a.frequency) as periods,
+            FLOOR((right_meow - COALESCE(r.next_redeem_at, creation_timestamp) + frequency) / a.frequency)::INTEGER as periods,
             category,
             COALESCE(r.next_redeem_at, creation_timestamp) AS next_redeem_at
         FROM active_subscriptions a
