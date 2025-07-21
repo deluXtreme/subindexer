@@ -55,6 +55,7 @@ async fn main() {
 
 async fn spawn_redeemer(pool: PgPool) {
     let mut ticker = interval(Duration::from_secs(60 * 5)); // every 5 minutes
+    tracing::info!("Cron redeemer");
     loop {
         ticker.tick().await;
         if let Err(err) = redeem::run_redeem_job(&pool).await {
