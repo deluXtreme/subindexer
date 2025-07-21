@@ -36,6 +36,5 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile.api
           push: true
           tags: ${{ steps.vars.outputs.image_tag }}
