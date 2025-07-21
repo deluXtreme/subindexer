@@ -13,7 +13,7 @@ pub struct RedeemableSubscription {
     pub next_redeem_at: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[repr(i16)]
 #[serde(rename_all = "lowercase")]
 pub enum Category {

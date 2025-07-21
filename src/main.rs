@@ -3,10 +3,11 @@ mod db;
 mod models;
 mod redeem;
 
+use alloy::signers::local::PrivateKeySigner;
 use axum::{Router, routing::get};
 use dotenv::dotenv;
 use sqlx::{PgPool, postgres::PgPoolOptions};
-use std::net::SocketAddr;
+use std::{env, net::SocketAddr};
 use tokio::time::{Duration, interval};
 use tower_http::cors::{Any, CorsLayer};
 
@@ -49,16 +50,23 @@ async fn main() {
     tracing::info!("listening on {}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    tokio::spawn(spawn_redeemer(pool.clone()));
+    let signer: PrivateKeySigner = env::var("PK")
+        .expect("PK must be set")
+        .parse()
+        .expect("Invalid Signer Key");
+    let rpc_url =
+        env::var("GNOSIS_RPC_URL").unwrap_or_else(|_| "https://rpc.gnosischain.com/".to_string());
+    tokio::spawn(spawn_redeemer(rpc_url, pool.clone(), signer));
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn spawn_redeemer(pool: PgPool) {
-    let mut ticker = interval(Duration::from_secs(60 * 5)); // every 5 minutes
+async fn spawn_redeemer(rpc_url: String, pool: PgPool, signer: PrivateKeySigner) {
+    let interval_seconds = 60; // 1 minute
+    let mut ticker = interval(Duration::from_secs(interval_seconds)); // every 12 hours
     tracing::info!("Cron redeemer");
     loop {
         ticker.tick().await;
-        if let Err(err) = redeem::run_redeem_job(&pool).await {
+        if let Err(err) = redeem::run_redeem_job(&rpc_url, &pool, &signer).await {
             tracing::error!("Redeem job failed: {err:?}");
         }
     }

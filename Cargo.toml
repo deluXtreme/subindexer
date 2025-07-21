@@ -16,3 +16,5 @@ dotenv = "0.15"
 chrono = "0.4"
 hex = "0.4.3"
 anyhow = "1.0.98"
+circles-pathfinder = "0.4.0"
+alloy = {version = "1.0.22", features = ["std", "providers", "signers"] }
