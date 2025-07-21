@@ -29,6 +29,6 @@ mod hex {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&format!("0x{}", hex::encode(bytes)))
+        serializer.serialize_str(&format!("0x{}", alloy::hex::encode(bytes)))
     }
 }

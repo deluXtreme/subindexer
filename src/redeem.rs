@@ -1,4 +1,5 @@
 use alloy::{
+    hex,
     primitives::{Address, U256, aliases::U192},
     providers::ProviderBuilder,
     signers::local::PrivateKeySigner,
