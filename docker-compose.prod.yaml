@@ -33,7 +33,7 @@ services:
       DATABASE_URL: postgres://postgres:rindexer@postgresql:5432/postgres
 
   api:
-    image: ghcr.io/deluxtreme/subindexer:main
+    image: ghcr.io/deluxtreme/subindexer:latest
     depends_on:
       postgresql:
         condition: service_healthy
