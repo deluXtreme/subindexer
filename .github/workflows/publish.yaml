@@ -2,15 +2,12 @@ name: Publish API Docker Image
 
 on:
   push:
-    branches:
-      - main
-    tags:
-      - 'v*' # Optional: versioned tags like v1.0.0
+    branches: [main]
+    tags: [v*]
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-
     permissions:
       contents: read
       packages: write
@@ -26,15 +23,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set image tag
-        id: vars
-        run: |
-          IMAGE_TAG=ghcr.io/${{ github.repository }}:api-latest
-          echo "image_tag=${IMAGE_TAG,,}" >> $GITHUB_OUTPUT
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          labels: |
+            org.opencontainers.image.licenses=MIT OR Apache-2.0
 
       - name: Build and Push API Image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
+          file: Dockerfile
           push: true
-          tags: ${{ steps.vars.outputs.image_tag }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
