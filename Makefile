@@ -11,3 +11,9 @@ down:
 clean:
 	docker-compose down
 	rm rindexer.yaml
+
+up-prod: rindexer.yaml
+	docker compose -f docker-compose.prod.yaml --env-file .env up -d
+
+down-prod:
+	docker compose -f docker-compose.prod.yaml down
