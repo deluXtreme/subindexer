@@ -23,8 +23,10 @@ impl Config {
 
         Self {
             pool,
-            redeemer: PrivateKeySigner::from_str(&env::var("REDEEMER_PK").expect("REDEEMER_PK must be set"))
-                .expect("Failed to parse REDEEMER_PK"),
+            redeemer: PrivateKeySigner::from_str(
+                &env::var("REDEEMER_PK").expect("REDEEMER_PK must be set"),
+            )
+            .expect("Failed to parse REDEEMER_PK"),
             api_port: env::var("API_PORT")
                 .unwrap_or_else(|_| "3000".to_string())
                 .parse()
