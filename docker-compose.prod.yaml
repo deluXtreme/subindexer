@@ -1,0 +1,50 @@
+volumes:
+  postgres_data:
+    driver: local
+
+services:
+  postgresql:
+    image: postgres:latest
+    shm_size: 1g
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5440:5432
+    env_file:
+      - ./.env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+  indexer:
+    image: ghcr.io/joshstevens19/rindexer
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    volumes:
+      - .:/app/project_path
+      - /var/run/docker.sock:/var/run/docker.sock
+    working_dir: /app/project_path
+    command: [ "start", "indexer"]
+    environment:
+      DATABASE_URL: postgres://postgres:rindexer@postgresql:5432/postgres
+
+  api:
+    image: ghcr.io/deluxtreme/subindexer:main
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://postgres:rindexer@postgresql:5432/postgres
+      # Set PK in your deployment environment or .env file (do NOT commit secrets)
+      PK: ${PK}
+      # Optional overrides:
+      # PORT: 3000
+      # REDEEM_INTERVAL: 3600
+      # GNOSIS_RPC_URL: https://rpc.gnosischain.com/
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
