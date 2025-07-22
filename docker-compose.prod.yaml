@@ -30,7 +30,7 @@ services:
     working_dir: /app/project_path
     command: [ "start", "indexer"]
     environment:
-      DATABASE_URL: postgres://postgres:rindexer@postgresql:5432/postgres
+      DATABASE_URL: ${DATABASE_URL:-postgres://postgres:rindexer@postgresql:5432/postgres}
 
   api:
     image: ghcr.io/deluxtreme/subindexer:main
@@ -38,13 +38,11 @@ services:
       postgresql:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://postgres:rindexer@postgresql:5432/postgres
-      # Set PK in your deployment environment or .env file (do NOT commit secrets)
-      PK: ${PK}
-      # Optional overrides:
-      # PORT: 3000
-      # REDEEM_INTERVAL: 3600
-      # GNOSIS_RPC_URL: https://rpc.gnosischain.com/
+      DATABASE_URL: ${DATABASE_URL:-postgres://postgres:rindexer@postgresql:5432/postgres}
+      REDEEMER_PK: ${REDEEMER_PK}
+      API_PORT: ${API_PORT:-3000}
+      REDEEM_INTERVAL: ${REDEEM_INTERVAL:-3600}
+      GNOSIS_RPC_URL: ${GNOSIS_RPC_URL:-https://rpc.gnosischain.com/}
     ports:
-      - "3000:3000"
+      - "${API_PORT:-3000}:${API_PORT:-3000}"
     restart: unless-stopped
