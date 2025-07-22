@@ -5,9 +5,6 @@ rindexer.yaml: rindexer.yaml.template .env
 up: rindexer.yaml
 	docker-compose up -d
 
-build-up: rindexer.yaml
-	docker-compose up -d --build
-
 down:
 	docker-compose down
 

@@ -13,7 +13,7 @@ pub struct RedeemableSubscription {
     pub next_redeem_at: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize, sqlx::Type)]
+#[derive(Debug, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[repr(i16)]
 #[serde(rename_all = "lowercase")]
 pub enum Category {
@@ -29,6 +29,6 @@ mod hex {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&format!("0x{}", hex::encode(bytes)))
+        serializer.serialize_str(&format!("0x{}", alloy::hex::encode(bytes)))
     }
 }
