@@ -21,7 +21,7 @@ Alternatively `make up`. See [Makefile](./.Makefile)
 # Local
 cargo run
 # Docker
-docker run --rm --env-file .env ghcr.io/deluXtreme/subindexer-api
+docker run --rm --env-file .env ghcr.io/deluXtreme/subindexer
 ```
 
 The API server will start on `http://localhost:3000/health_check`

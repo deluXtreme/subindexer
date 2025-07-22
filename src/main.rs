@@ -45,6 +45,11 @@ async fn main() {
         .parse::<u16>()
         .expect("PORT must be a number");
 
+    let redeem_interval = std::env::var("REDEEM_INTERVAL")
+        .unwrap_or_else(|_| "3600".to_string())
+        .parse::<u64>()
+        .expect("REDEEM_INTERVAL must be a number");
+
     // Run it
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     tracing::info!("listening on {}", addr);
@@ -57,13 +62,22 @@ async fn main() {
     tracing::info!("redeemer account {}", signer.address());
     let rpc_url =
         env::var("GNOSIS_RPC_URL").unwrap_or_else(|_| "https://rpc.gnosischain.com/".to_string());
-    tokio::spawn(spawn_redeemer(rpc_url, pool.clone(), signer));
+    tokio::spawn(spawn_redeemer(
+        redeem_interval,
+        rpc_url,
+        pool.clone(),
+        signer,
+    ));
     axum::serve(listener, app).await.unwrap();
 }
 
-async fn spawn_redeemer(rpc_url: String, pool: PgPool, signer: PrivateKeySigner) {
-    let interval_seconds = 60; // 1 minute
-    let mut ticker = interval(Duration::from_secs(interval_seconds)); // every 12 hours
+async fn spawn_redeemer(
+    redeem_interval: u64,
+    rpc_url: String,
+    pool: PgPool,
+    signer: PrivateKeySigner,
+) {
+    let mut ticker = interval(Duration::from_secs(redeem_interval));
     tracing::info!("Cron redeemer");
     loop {
         ticker.tick().await;
