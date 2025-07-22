@@ -54,6 +54,7 @@ async fn main() {
         .expect("PK must be set")
         .parse()
         .expect("Invalid Signer Key");
+    tracing::info!("redeemer account {}", signer.address());
     let rpc_url =
         env::var("GNOSIS_RPC_URL").unwrap_or_else(|_| "https://rpc.gnosischain.com/".to_string());
     tokio::spawn(spawn_redeemer(rpc_url, pool.clone(), signer));
