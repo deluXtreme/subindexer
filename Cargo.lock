@@ -3776,6 +3776,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "thiserror 2.0.12",
  "tokio",
  "tower-http 0.5.2",
  "tracing",

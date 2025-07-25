@@ -89,12 +89,12 @@ pub async fn redeem_payment(
         );
         tx = contract.redeem(id.into(), data.into()).send().await?;
     }
-
     tracing::info!(
         "Redeemed 0x{} at: https://gnosisscan.io/tx/{}",
         hex::encode(subscription.id),
         tx.tx_hash()
     );
-
+    let receipt = tx.get_receipt().await?;
+    tracing::info!("Receipt Status: {:?}", receipt.status());
     Ok(true)
 }
