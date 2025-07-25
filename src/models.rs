@@ -13,6 +13,18 @@ pub struct RedeemableSubscription {
     pub next_redeem_at: i32,
 }
 
+#[derive(Debug, Serialize, Deserialize, FromRow)]
+pub struct Subscription {
+    #[serde(serialize_with = "hex::serialize")]
+    pub id: Vec<u8>,
+    pub subscriber: String,
+    pub recipient: String,
+    pub amount: String,
+    pub category: Category,
+    pub frequency: i32,
+    pub creation_timestamp: i32,
+}
+
 #[derive(Debug, Serialize, Deserialize, sqlx::Type, PartialEq)]
 #[repr(i16)]
 #[serde(rename_all = "lowercase")]

@@ -1,5 +1,10 @@
 use crate::{db, models};
-use axum::{Json, extract::State};
+use alloy::primitives::Address;
+use axum::{
+    Json,
+    extract::{Query, State},
+};
+use serde::Deserialize;
 use sqlx::PgPool;
 
 pub async fn get_redeemable(
@@ -19,6 +24,46 @@ pub async fn get_redeemable(
             // Log other database errors but don't panic
             tracing::error!("Database error: {}", e);
             Json(Vec::new())
+        }
+    }
+}
+
+#[derive(Deserialize)]
+pub struct SubscriptionsQuery {
+    pub subscriber: Option<Address>,
+    pub recipient: Option<Address>,
+}
+
+pub async fn get_subscriptions(
+    State(pool): State<PgPool>,
+    Query(query): Query<SubscriptionsQuery>,
+) -> Result<Json<Vec<models::Subscription>>, (axum::http::StatusCode, Json<serde_json::Value>)> {
+    match db::get_user_subscriptions(&pool, query.subscriber, query.recipient).await {
+        Ok(subscriptions) => Ok(Json(subscriptions)),
+        Err(db::AppError::Sqlx(sqlx::Error::Database(db_err)))
+            if db_err.code() == Some(std::borrow::Cow::Borrowed("42P01")) =>
+        {
+            // Table doesn't exist yet, return empty list
+            tracing::warn!("Database tables don't exist yet, returning empty list");
+            Err((
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": "Database tables don't exist yet" })),
+            ))
+        }
+        Err(db::AppError::BadRequest(e)) => {
+            tracing::error!("Bad request: {}", e);
+            Err((
+                axum::http::StatusCode::BAD_REQUEST,
+                Json(serde_json::json!({ "error": e.to_string() })),
+            ))
+        }
+        Err(e) => {
+            // Log other database errors but don't panic
+            tracing::error!("Database error: {}", e);
+            Err((
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(serde_json::json!({ "error": "Database error" })),
+            ))
         }
     }
 }

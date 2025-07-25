@@ -26,6 +26,7 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(api::health_check))
         .route("/redeemable", get(api::get_redeemable))
+        .route("/subscriptions", get(api::get_subscriptions))
         .layer(
             CorsLayer::new()
                 .allow_origin(Any)
