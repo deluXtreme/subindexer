@@ -45,7 +45,7 @@ async fn main() {
 
 async fn spawn_redeemer(config: Config) {
     let mut ticker = interval(Duration::from_secs(config.redeem_interval));
-    tracing::info!("Cron redeemer");
+    ticker.tick().await; // Skip the immediate first tick
     loop {
         ticker.tick().await;
         if let Err(err) =
