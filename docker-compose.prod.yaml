@@ -20,7 +20,7 @@ services:
       retries: 5
       start_period: 10s
   indexer:
-    image: ghcr.io/joshstevens19/rindexer:sha-de24c808b8af5ad8c07c9f8dda4c11965d5dfa04
+    image: ghcr.io/joshstevens19/rindexer
     depends_on:
       postgresql:
         condition: service_healthy

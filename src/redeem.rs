@@ -1,7 +1,7 @@
 use alloy::{
     hex,
     primitives::{Address, U256, aliases::U192},
-    providers::ProviderBuilder,
+    providers::{Provider, ProviderBuilder},
     signers::local::PrivateKeySigner,
     sol,
 };
@@ -16,11 +16,27 @@ use crate::{
     redeem,
 };
 
+const STALE_BLOCK_THRESHOLD: u64 = 100;
+
 pub async fn run_redeem_job(
     rpc_url: &str,
     pool: &PgPool,
     signer: &PrivateKeySigner,
 ) -> Result<(), Box<dyn Error>> {
+    tracing::info!("Running redeem job with signer: {:?}", signer.address());
+    // Ensure indexer liveness.
+    let last_synced_block = db::get_last_synced_block(pool).await?;
+    // Use a different RPC as indexer (because node may not be synced.)
+    let provider = ProviderBuilder::new().connect_http("https://rpc.gnosischain.com/".parse()?);
+    let latest_block = provider.get_block_number().await?;
+    if last_synced_block + STALE_BLOCK_THRESHOLD < latest_block {
+        return Err(format!(
+            "Stale indexer: {} blocks behind latest block",
+            latest_block - last_synced_block
+        )
+        .into());
+    }
+
     let current_timestamp = chrono::Utc::now().timestamp() as i32;
     let subscriptions = db::get_redeemable_subscriptions(pool, current_timestamp).await?;
     tracing::info!("Found {} subscriptions", subscriptions.len());
@@ -87,6 +103,7 @@ pub async fn redeem_payment(
             path_data.packed_coordinates,
             path_data.source_coordinate,
         );
+        tracing::info!("Encoded CallData: 0x{}", hex::encode(&data));
         tx = contract.redeem(id.into(), data.into()).send().await?;
     }
     tracing::info!(

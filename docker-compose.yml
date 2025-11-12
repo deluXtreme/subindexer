@@ -4,11 +4,11 @@ volumes:
 
 services:
   postgresql:
-    image: postgres:latest
+    image: postgres:18
     shm_size: 1g
     restart: always
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     ports:
       - 5440:5432
     env_file:
@@ -20,7 +20,7 @@ services:
       retries: 5
       start_period: 10s
   indexer:
-    image: ghcr.io/joshstevens19/rindexer:v0.28.0
+    image: ghcr.io/joshstevens19/rindexer
     depends_on:
       postgresql:
         condition: service_healthy

@@ -26,6 +26,15 @@ pub async fn get_redeemable_subscriptions(
         .await
 }
 
+pub async fn get_last_synced_block(pool: &PgPool) -> Result<u64, sqlx::Error> {
+    sqlx::query_scalar::<_, i64>(
+        "SELECT block::bigint FROM rindexer_internal.latest_block WHERE network = 'gnosis'",
+    )
+    .fetch_one(pool)
+    .await
+    .map(|result| result as u64)
+}
+
 const RECIPIENT_QUERY: &str = include_str!("queries/recipient.sql");
 const SUBSCRIBER_QUERY: &str = include_str!("queries/subscriber.sql");
 const RECIPIENT_SUBSCRIBER_QUERY: &str = include_str!("queries/recipient_subscriber.sql");
