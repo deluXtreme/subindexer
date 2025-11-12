@@ -5,7 +5,7 @@ use sqlx::{PgPool, postgres::PgPoolOptions};
 
 pub struct Config {
     pub pool: PgPool,
-    pub redeemer: PrivateKeySigner,
+    pub redeemer: Option<PrivateKeySigner>,
     // Optional overrides:
     pub api_port: u16,
     pub rpc_url: String,
@@ -20,13 +20,11 @@ impl Config {
             .connect(&database_url)
             .await
             .expect("Failed to connect to Postgres");
-
+        let redeemer_pk = env::var("REDEEMER_PK").ok();
         Self {
             pool,
-            redeemer: PrivateKeySigner::from_str(
-                &env::var("REDEEMER_PK").expect("REDEEMER_PK must be set"),
-            )
-            .expect("Failed to parse REDEEMER_PK"),
+            redeemer: redeemer_pk
+                .map(|pk| PrivateKeySigner::from_str(&pk).expect("Failed to parse REDEEMER_PK")),
             api_port: env::var("API_PORT")
                 .unwrap_or_else(|_| "3000".to_string())
                 .parse()
@@ -42,11 +40,11 @@ impl Config {
 
     pub fn log_non_secrets(&self) {
         tracing::info!(
-            "Config: api_port={}, redeem_interval={}, rpc_url={}, redeemer={}",
+            "Config: api_port={}, redeem_interval={}, rpc_url={}, redeemer={:?}",
             self.api_port,
             self.redeem_interval,
             self.rpc_url,
-            self.redeemer.address()
+            self.redeemer.as_ref().map(|r| r.address())
         );
     }
 }
