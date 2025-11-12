@@ -26,15 +26,15 @@ pub async fn run_redeem_job(
     tracing::info!("Running redeem job with signer: {:?}", signer.address());
     // Ensure indexer liveness.
     let last_synced_block = db::get_last_synced_block(pool).await?;
-    let provider = ProviderBuilder::new().connect_http(rpc_url.parse()?);
+    // Use a different RPC as indexer (because node may not be synced.)
+    let provider = ProviderBuilder::new().connect_http("https://rpc.gnosischain.com/".parse()?);
     let latest_block = provider.get_block_number().await?;
-    if latest_block <= last_synced_block + STALE_BLOCK_THRESHOLD {
-        tracing::error!(
-            "Stale indexer: latest block {} <= last synced block {}",
-            latest_block,
-            last_synced_block
-        );
-        return Ok(());
+    if last_synced_block + STALE_BLOCK_THRESHOLD < latest_block {
+        return Err(format!(
+            "Stale indexer: {} blocks behind latest block",
+            latest_block - last_synced_block
+        )
+        .into());
     }
 
     let current_timestamp = chrono::Utc::now().timestamp() as i32;
