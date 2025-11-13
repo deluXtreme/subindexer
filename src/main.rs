@@ -4,6 +4,7 @@ mod db;
 mod models;
 mod redeem;
 
+use anyhow::Context;
 use axum::{Router, routing::get};
 use config::Config;
 use dotenv::dotenv;
@@ -12,7 +13,7 @@ use tokio::time::{Duration, interval};
 use tower_http::cors::{Any, CorsLayer};
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     // Load environment variables
     dotenv().ok();
 
@@ -38,9 +39,12 @@ async fn main() {
     let addr = SocketAddr::from(([0, 0, 0, 0], config.api_port));
     tracing::info!("listening on {}", addr);
 
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+    let listener = tokio::net::TcpListener::bind(addr)
+        .await
+        .context("failed to bind listener on port")?;
     tokio::spawn(spawn_redeemer(config));
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app).await?;
+    Ok(())
 }
 
 async fn spawn_redeemer(config: Config) {

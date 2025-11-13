@@ -33,7 +33,7 @@ pub async fn run_redeem_job(
 
     let current_timestamp = chrono::Utc::now().timestamp() as i32;
     let subscriptions = db::get_redeemable_subscriptions(pool, current_timestamp).await?;
-    tracing::info!("Found {} subscriptions", subscriptions.len());
+    tracing::info!("Found {} redeemable subscriptions", subscriptions.len());
     for subscription in subscriptions {
         redeem::redeem_payment(rpc_url, signer.clone(), subscription).await?;
     }
@@ -95,7 +95,7 @@ pub async fn redeem_payment(
             path_data.packed_coordinates,
             path_data.source_coordinate,
         );
-        tracing::info!("Encoded CallData: 0x{}", hex::encode(&data));
+        tracing::debug!("Encoded CallData: 0x{}", hex::encode(&data));
         tx = contract.redeem(id.into(), data.into()).send().await?;
     }
     tracing::info!(
@@ -103,7 +103,5 @@ pub async fn redeem_payment(
         hex::encode(subscription.id),
         tx.tx_hash()
     );
-    let receipt = tx.get_receipt().await?;
-    tracing::info!("Receipt Status: {:?}", receipt.status());
     Ok(true)
 }
