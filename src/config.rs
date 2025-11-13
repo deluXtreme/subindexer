@@ -17,7 +17,8 @@ pub struct Config {
 
 impl Config {
     pub async fn from_env() -> Self {
-        let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+        let database_url = env::var("DATABASE_URL")
+            .unwrap_or("postgres://postgres:rindexer@database:5432/postgres".to_string());
         let pool = PgPoolOptions::new()
             .max_connections(2)
             .connect(&database_url)
