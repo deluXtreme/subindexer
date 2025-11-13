@@ -1,7 +1,7 @@
 use alloy::{
     hex,
     primitives::{Address, U256, aliases::U192},
-    providers::{Provider, ProviderBuilder},
+    providers::ProviderBuilder,
     signers::local::PrivateKeySigner,
     sol,
 };
@@ -11,13 +11,11 @@ use circles_pathfinder::{FindPathParams, encode_redeem_trusted_data, prepare_flo
 use std::{error::Error, str::FromStr};
 
 use crate::{
+    config::STALE_BLOCK_THRESHOLD,
     db,
     models::{Category, RedeemableSubscription},
     redeem,
 };
-
-// One hour on (gnosis chain).
-const STALE_BLOCK_THRESHOLD: u64 = 12 * 60;
 
 pub async fn run_redeem_job(
     rpc_url: &str,
@@ -26,14 +24,10 @@ pub async fn run_redeem_job(
 ) -> Result<(), Box<dyn Error>> {
     tracing::info!("Running redeem job with signer: {:?}", signer.address());
     // Ensure indexer liveness.
-    let last_synced_block = db::get_last_synced_block(pool).await?;
-    // Use a different RPC as indexer (because node may not be synced.)
-    let provider = ProviderBuilder::new().connect_http("https://rpc.gnosischain.com/".parse()?);
-    let latest_block = provider.get_block_number().await?;
-    if last_synced_block + STALE_BLOCK_THRESHOLD < latest_block {
+    let blocks_behind = db::check_liveness(pool).await?;
+    if blocks_behind > STALE_BLOCK_THRESHOLD {
         tracing::warn!(
-            "Stale indexer: {} blocks behind latest. transaction may fail...",
-            latest_block - last_synced_block
+            "Stale indexer: {blocks_behind} blocks behind latest. transaction may fail...",
         );
     }
 

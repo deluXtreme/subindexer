@@ -1,4 +1,4 @@
-use crate::{db, models};
+use crate::{config::STALE_BLOCK_THRESHOLD, db, models};
 use alloy::primitives::Address;
 use axum::{
     Json,
@@ -54,11 +54,12 @@ pub async fn get_subscriptions(
 pub async fn health_check(State(pool): State<PgPool>) -> Json<serde_json::Value> {
     // Test database connectivity
     let db_healthy = (sqlx::query("SELECT 1").execute(&pool).await).is_ok();
-    let latest_synced_block = db::get_last_synced_block(&pool).await.is_ok();
+    let blocks_behind = db::check_liveness(&pool).await.unwrap_or(u64::MAX);
+    let stale = blocks_behind > STALE_BLOCK_THRESHOLD;
     Json(serde_json::json!({
-        "status": if db_healthy && latest_synced_block { "healthy" } else { "unhealthy" },
+        "status": if db_healthy && !stale { "healthy" } else { "unhealthy" },
         "database": if db_healthy { "connected" } else { "disconnected" },
-        "latest_synced_block": latest_synced_block,
+        "live": stale,
         "timestamp": chrono::Utc::now().to_rfc3339()
     }))
 }
