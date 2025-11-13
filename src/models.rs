@@ -3,6 +3,7 @@ use sqlx::FromRow;
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct RedeemableSubscription {
+    pub contract_address: String,
     #[serde(serialize_with = "hex::serialize")]
     pub id: Vec<u8>,
     pub subscriber: String,
@@ -15,6 +16,7 @@ pub struct RedeemableSubscription {
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Subscription {
+    pub contract_address: String,
     #[serde(serialize_with = "hex::serialize")]
     pub id: Vec<u8>,
     pub subscriber: String,

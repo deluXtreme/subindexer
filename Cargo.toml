@@ -16,4 +16,4 @@ dotenv = "0.15"
 chrono = "0.4"
 circles-pathfinder = "0.4.0"
 alloy = {version = "1.0.42", features = ["std", "providers", "signers"] }
-thiserror = "2.0.17"
+anyhow = "1.0.100"

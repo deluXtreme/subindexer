@@ -1,18 +1,10 @@
 use crate::models::{RedeemableSubscription, Subscription};
-use alloy::primitives::Address;
-use sqlx::Error as SqlxError;
+use alloy::{
+    primitives::Address,
+    providers::{Provider, ProviderBuilder},
+};
+use anyhow::Result;
 use sqlx::PgPool;
-
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub enum AppError {
-    #[error("Database error: {0}")]
-    Sqlx(#[from] SqlxError),
-
-    #[error("Bad Request: {0}")]
-    BadRequest(String),
-}
 
 const REDEEMABLE_QUERY: &str = include_str!("queries/redeemable.sql");
 
@@ -26,7 +18,7 @@ pub async fn get_redeemable_subscriptions(
         .await
 }
 
-pub async fn get_last_synced_block(pool: &PgPool) -> Result<u64, sqlx::Error> {
+async fn get_last_synced_block(pool: &PgPool) -> Result<u64, sqlx::Error> {
     sqlx::query_scalar::<_, i64>(
         "SELECT block::bigint FROM rindexer_internal.latest_block WHERE network = 'gnosis'",
     )
@@ -35,52 +27,35 @@ pub async fn get_last_synced_block(pool: &PgPool) -> Result<u64, sqlx::Error> {
     .map(|result| result as u64)
 }
 
-const RECIPIENT_QUERY: &str = include_str!("queries/recipient.sql");
-const SUBSCRIBER_QUERY: &str = include_str!("queries/subscriber.sql");
-const RECIPIENT_SUBSCRIBER_QUERY: &str = include_str!("queries/recipient_subscriber.sql");
+// Returns number of blocks behind latest
+pub async fn check_liveness(pool: &PgPool) -> Result<u64> {
+    let last_synced_block = get_last_synced_block(pool).await?;
+
+    // Use a different RPC as indexer (because node may not be synced.)
+    let provider = ProviderBuilder::new().connect_http("https://rpc.gnosischain.com/".parse()?);
+    let latest_block = provider.get_block_number().await?;
+    Ok(latest_block - last_synced_block)
+}
+
+const USER_SUBSCRIPTIONS_QUERY: &str = include_str!("queries/user_subscriptions.sql");
 
 pub async fn get_user_subscriptions(
     pool: &PgPool,
     subscriber: Option<Address>,
     recipient: Option<Address>,
-) -> Result<Vec<Subscription>, AppError> {
+) -> Result<Vec<Subscription>, sqlx::Error> {
     tracing::info!(
         "Getting user subscriptions for subscriber: {:?}, recipient: {:?}",
         subscriber,
         recipient
     );
-    match (subscriber, recipient) {
-        (None, None) => {
-            // Early exit to avoid unnecessary database queries.
-            Err(AppError::BadRequest(
-                "At least one of subscriber or recipient must be specified.".to_string(),
-            ))
-        }
-        (Some(subscriber), Some(recipient)) => {
-            let subscriber_hex = format!("0x{}", alloy::hex::encode(subscriber));
-            let recipient_hex = format!("0x{}", alloy::hex::encode(recipient));
-            sqlx::query_as::<_, Subscription>(RECIPIENT_SUBSCRIBER_QUERY)
-                .bind(subscriber_hex)
-                .bind(recipient_hex)
-                .fetch_all(pool)
-                .await
-                .map_err(AppError::Sqlx)
-        }
-        (Some(subscriber), None) => {
-            let subscriber_hex = format!("0x{}", alloy::hex::encode(subscriber));
-            sqlx::query_as::<_, Subscription>(SUBSCRIBER_QUERY)
-                .bind(subscriber_hex)
-                .fetch_all(pool)
-                .await
-                .map_err(AppError::Sqlx)
-        }
-        (None, Some(recipient)) => {
-            let recipient_hex = format!("0x{}", alloy::hex::encode(recipient));
-            sqlx::query_as::<_, Subscription>(RECIPIENT_QUERY)
-                .bind(recipient_hex)
-                .fetch_all(pool)
-                .await
-                .map_err(AppError::Sqlx)
-        }
-    }
+
+    let subscriber_hex = subscriber.map(|s| format!("0x{}", alloy::hex::encode(s)));
+    let recipient_hex = recipient.map(|r| format!("0x{}", alloy::hex::encode(r)));
+
+    sqlx::query_as::<_, Subscription>(USER_SUBSCRIPTIONS_QUERY)
+        .bind(subscriber_hex)
+        .bind(recipient_hex)
+        .fetch_all(pool)
+        .await
 }

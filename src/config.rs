@@ -3,6 +3,9 @@ use std::{env, str::FromStr};
 use alloy::signers::local::PrivateKeySigner;
 use sqlx::{PgPool, postgres::PgPoolOptions};
 
+// One hour on (gnosis chain).
+pub const STALE_BLOCK_THRESHOLD: u64 = 12 * 60;
+
 pub struct Config {
     pub pool: PgPool,
     pub redeemer: Option<PrivateKeySigner>,
