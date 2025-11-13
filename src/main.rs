@@ -4,6 +4,7 @@ mod db;
 mod models;
 mod redeem;
 
+use anyhow::Context;
 use axum::{Router, routing::get};
 use config::Config;
 use dotenv::dotenv;
@@ -38,7 +39,7 @@ async fn main() -> anyhow::Result<()> {
     let addr = SocketAddr::from(([0, 0, 0, 0], config.api_port));
     tracing::info!("listening on {}", addr);
 
-    let listener = tokio::net::TcpListener::bind(addr).await?;
+    let listener = tokio::net::TcpListener::bind(addr).await.context("failed to bind listener on port")?;
     tokio::spawn(spawn_redeemer(config));
     axum::serve(listener, app).await?;
     Ok(())
