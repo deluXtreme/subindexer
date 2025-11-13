@@ -4,7 +4,6 @@ mod db;
 mod models;
 mod redeem;
 
-use anyhow;
 use axum::{Router, routing::get};
 use config::Config;
 use dotenv::dotenv;
