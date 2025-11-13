@@ -16,7 +16,8 @@ use crate::{
     redeem,
 };
 
-const STALE_BLOCK_THRESHOLD: u64 = 100;
+// One hour on (gnosis chain).
+const STALE_BLOCK_THRESHOLD: u64 = 12 * 60;
 
 pub async fn run_redeem_job(
     rpc_url: &str,
@@ -30,11 +31,10 @@ pub async fn run_redeem_job(
     let provider = ProviderBuilder::new().connect_http("https://rpc.gnosischain.com/".parse()?);
     let latest_block = provider.get_block_number().await?;
     if last_synced_block + STALE_BLOCK_THRESHOLD < latest_block {
-        return Err(format!(
-            "Stale indexer: {} blocks behind latest block",
+        tracing::warn!(
+            "Stale indexer: {} blocks behind latest. transaction may fail...",
             latest_block - last_synced_block
-        )
-        .into());
+        );
     }
 
     let current_timestamp = chrono::Utc::now().timestamp() as i32;
@@ -60,9 +60,7 @@ pub async fn redeem_payment(
     signer: PrivateKeySigner,
     subscription: RedeemableSubscription,
 ) -> Result<bool, Box<dyn std::error::Error>> {
-    let subscription_module = "0xcEbE4B6d50Ce877A9689ce4516Fe96911e099A78"
-        .parse::<Address>()
-        .unwrap();
+    let subscription_module = subscription.contract_address.parse::<Address>().unwrap();
 
     let provider = ProviderBuilder::new()
         .wallet(signer)
@@ -72,7 +70,7 @@ pub async fn redeem_payment(
     let tx;
     tracing::info!(
         "Redeeming: {}",
-        serde_json::to_string_pretty(&subscription).unwrap()
+        serde_json::to_string(&subscription).unwrap()
     );
     if subscription.category != Category::Trusted {
         tx = contract.redeem(id.into(), vec![].into()).send().await?;

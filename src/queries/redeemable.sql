@@ -1,6 +1,7 @@
 WITH
     active_subscriptions as (
         SELECT
+            active.contract_address,
             active.id,
             active.subscriber,
             recipient,
@@ -30,6 +31,7 @@ WITH
     ),
     upcoming AS (
         SELECT
+            a.contract_address,
             a.id,
             a.subscriber,
             COALESCE(rp.new_recipient, a.recipient) AS recipient,
