@@ -50,7 +50,6 @@ async fn main() -> anyhow::Result<()> {
 async fn spawn_redeemer(config: Config) {
     if let Some(redeemer) = config.redeemer {
         let mut ticker = interval(Duration::from_secs(config.redeem_interval));
-        ticker.tick().await; // Skip the immediate first tick
         loop {
             ticker.tick().await;
             if let Err(err) = redeem::run_redeem_job(&config.rpc_url, &config.pool, &redeemer).await
