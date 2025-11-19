@@ -7,27 +7,39 @@ WITH
             recipient,
             amount,
             category,
-            frequency::INTEGER as frequency,
-            FLOOR(EXTRACT(EPOCH FROM now())) as right_meow,
-            creation_timestamp::INTEGER as creation_timestamp
-        FROM subindexer_subscription_module.subscription_created active
-                 LEFT JOIN subindexer_subscription_module.unsubscribed canceled
+            frequency,
+            CAST(strftime('%s', 'now') AS INTEGER) as right_meow,
+            creation_timestamp
+        FROM subindexer_subscription_module_subscription_created active
+                 LEFT JOIN subindexer_subscription_module_unsubscribed canceled
                            ON active.id = canceled.id
         WHERE canceled.id IS NULL
     ),
     latest_redemptions AS (
-        SELECT DISTINCT ON (id)
+        SELECT
             id,
-            next_redeem_at::INTEGER as next_redeem_at
-        FROM subindexer_subscription_module.redeemed
-        ORDER BY id, next_redeem_at DESC
+            next_redeem_at
+        FROM (
+            SELECT
+                id,
+                next_redeem_at,
+                ROW_NUMBER() OVER (PARTITION BY id ORDER BY next_redeem_at DESC) as rn
+            FROM subindexer_subscription_module_redeemed
+        )
+        WHERE rn = 1
     ),
     latest_recipients AS (
-        SELECT DISTINCT ON (id)
+        SELECT
             id,
             new_recipient
-        FROM subindexer_subscription_module.recipient_updated
-        ORDER BY id, block_number DESC
+        FROM (
+            SELECT
+                id,
+                new_recipient,
+                ROW_NUMBER() OVER (PARTITION BY id ORDER BY block_number DESC) as rn
+            FROM subindexer_subscription_module_recipient_updated
+        )
+        WHERE rn = 1
     ),
     upcoming AS (
         SELECT
@@ -37,9 +49,9 @@ WITH
             COALESCE(rp.new_recipient, a.recipient) AS recipient,
             amount,
             -- Redeemable Periods: cf https://github.com/deluXtreme/subi-contracts/blob/65455f02e3e7a49654c51b9b5e805cccc1032168/src/SubscriptionModule.sol#L154-L158
-            FLOOR((right_meow - COALESCE(r.next_redeem_at, creation_timestamp) + frequency) / a.frequency)::INTEGER as periods,
+            CAST((right_meow - COALESCE(CAST(r.next_redeem_at AS INTEGER), CAST(creation_timestamp AS INTEGER)) + CAST(frequency AS INTEGER)) / CAST(a.frequency AS INTEGER) AS INTEGER) as periods,
             category,
-            COALESCE(r.next_redeem_at, creation_timestamp) AS next_redeem_at
+            CAST(COALESCE(r.next_redeem_at, creation_timestamp) AS INTEGER) AS next_redeem_at
         FROM active_subscriptions a
                 LEFT JOIN latest_redemptions r
                         ON a.id = r.id

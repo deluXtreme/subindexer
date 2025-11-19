@@ -4,8 +4,7 @@ use sqlx::FromRow;
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct RedeemableSubscription {
     pub contract_address: String,
-    #[serde(serialize_with = "hex::serialize")]
-    pub id: Vec<u8>,
+    pub id: String,
     pub subscriber: String,
     pub recipient: String,
     pub amount: String,
@@ -17,8 +16,7 @@ pub struct RedeemableSubscription {
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Subscription {
     pub contract_address: String,
-    #[serde(serialize_with = "hex::serialize")]
-    pub id: Vec<u8>,
+    pub id: String,
     pub subscriber: String,
     pub recipient: String,
     pub amount: String,
@@ -27,22 +25,36 @@ pub struct Subscription {
     pub creation_timestamp: i32,
 }
 
-#[derive(Debug, Serialize, Deserialize, sqlx::Type, PartialEq)]
-#[repr(i16)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Category {
-    Trusted = 0,
-    Untrusted = 1,
-    Group = 2,
+    Trusted,
+    Untrusted,
+    Group,
 }
 
-mod hex {
-    use serde::Serializer;
+impl<DB: sqlx::Database> sqlx::Type<DB> for Category
+where
+    String: sqlx::Type<DB>,
+{
+    fn type_info() -> <DB as sqlx::Database>::TypeInfo {
+        <String as sqlx::Type<DB>>::type_info()
+    }
+}
 
-    pub fn serialize<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&format!("0x{}", alloy::hex::encode(bytes)))
+impl<'r> sqlx::Decode<'r, sqlx::Sqlite> for Category {
+    fn decode(
+        value: <sqlx::Sqlite as sqlx::Database>::ValueRef<'r>,
+    ) -> Result<Self, sqlx::error::BoxDynError> {
+        let value = <String as sqlx::Decode<sqlx::Sqlite>>::decode(value)?;
+        match value.as_str() {
+            "0" => Ok(Category::Trusted),
+            "1" => Ok(Category::Untrusted),
+            "2" => Ok(Category::Group),
+            "trusted" => Ok(Category::Trusted),
+            "untrusted" => Ok(Category::Untrusted),
+            "group" => Ok(Category::Group),
+            _ => Err(format!("invalid category value: {}", value).into()),
+        }
     }
 }

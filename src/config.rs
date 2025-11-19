@@ -18,6 +18,7 @@ pub struct Config {
 impl Config {
     pub async fn from_env() -> Self {
         let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+        tracing::info!("Connecting to SQLite database at {}", database_url);
         let pool = SqlitePoolOptions::new()
             .max_connections(2)
             .connect(&database_url)

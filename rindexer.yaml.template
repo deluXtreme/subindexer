@@ -5,7 +5,7 @@ networks:
   chain_id: 100
   rpc: $GNOSIS_RPC_URL
 storage:
-  postgres:
+  sqlite:
     enabled: true
 native_transfers:
   enabled: false

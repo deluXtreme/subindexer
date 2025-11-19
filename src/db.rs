@@ -3,7 +3,7 @@ use alloy::{
     primitives::Address,
     providers::{Provider, ProviderBuilder},
 };
-use anyhow::Result;
+use anyhow::{Context, Result};
 use sqlx::SqlitePool;
 
 const REDEEMABLE_QUERY: &str = include_str!("queries/redeemable.sql");
@@ -20,7 +20,7 @@ pub async fn get_redeemable_subscriptions(
 
 async fn get_last_synced_block(pool: &SqlitePool) -> Result<u64, sqlx::Error> {
     sqlx::query_scalar::<_, i64>(
-        "SELECT block::bigint FROM rindexer_internal.latest_block WHERE network = 'gnosis'",
+        "SELECT block FROM rindexer_internal_latest_block WHERE network = 'gnosis'",
     )
     .fetch_one(pool)
     .await
@@ -29,7 +29,9 @@ async fn get_last_synced_block(pool: &SqlitePool) -> Result<u64, sqlx::Error> {
 
 // Returns number of blocks behind latest
 pub async fn check_liveness(pool: &SqlitePool) -> Result<u64> {
-    let last_synced_block = get_last_synced_block(pool).await?;
+    let last_synced_block = get_last_synced_block(pool)
+        .await
+        .context("Failed to get last synced block")?;
 
     // Use a different RPC as indexer (because node may not be synced.)
     let provider = ProviderBuilder::new().connect_http("https://rpc.gnosischain.com/".parse()?);

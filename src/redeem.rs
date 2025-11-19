@@ -5,10 +5,11 @@ use alloy::{
     signers::local::PrivateKeySigner,
     sol,
 };
+use anyhow::{Context, Result};
 use sqlx::SqlitePool;
 
 use circles_pathfinder::{FindPathParams, encode_redeem_trusted_data, prepare_flow_for_contract};
-use std::{error::Error, str::FromStr};
+use std::str::FromStr;
 
 use crate::{
     config::STALE_BLOCK_THRESHOLD,
@@ -21,10 +22,12 @@ pub async fn run_redeem_job(
     rpc_url: &str,
     pool: &SqlitePool,
     signer: &PrivateKeySigner,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     tracing::info!("Running redeem job with signer: {:?}", signer.address());
     // Ensure indexer liveness.
-    let blocks_behind = db::check_liveness(pool).await?;
+    let blocks_behind = db::check_liveness(pool)
+        .await
+        .context("Failed to check indexer liveness")?;
     if blocks_behind > STALE_BLOCK_THRESHOLD {
         tracing::warn!(
             "Stale indexer: {blocks_behind} blocks behind latest. transaction may fail...",
@@ -53,14 +56,14 @@ pub async fn redeem_payment(
     rpc_url: &str,
     signer: PrivateKeySigner,
     subscription: RedeemableSubscription,
-) -> Result<bool, Box<dyn std::error::Error>> {
+) -> Result<bool> {
     let subscription_module = subscription.contract_address.parse::<Address>().unwrap();
 
     let provider = ProviderBuilder::new()
         .wallet(signer)
         .connect_http(rpc_url.parse()?);
     let contract = SubscriptionModule::new(subscription_module, provider);
-    let id = U256::from_be_slice(&subscription.id);
+    let id = U256::from_str_radix(subscription.id.trim_start_matches("0x"), 16)?;
     let tx;
     tracing::info!(
         "Redeeming: {}",
