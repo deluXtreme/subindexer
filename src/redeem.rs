@@ -5,7 +5,7 @@ use alloy::{
     signers::local::PrivateKeySigner,
     sol,
 };
-use sqlx::PgPool;
+use sqlx::SqlitePool;
 
 use circles_pathfinder::{FindPathParams, encode_redeem_trusted_data, prepare_flow_for_contract};
 use std::{error::Error, str::FromStr};
@@ -19,7 +19,7 @@ use crate::{
 
 pub async fn run_redeem_job(
     rpc_url: &str,
-    pool: &PgPool,
+    pool: &SqlitePool,
     signer: &PrivateKeySigner,
 ) -> Result<(), Box<dyn Error>> {
     tracing::info!("Running redeem job with signer: {:?}", signer.address());
