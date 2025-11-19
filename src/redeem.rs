@@ -120,7 +120,7 @@ async fn encode_tx<P: Provider>(
     contract: SubscriptionModuleInstance<P>,
     subscription: &RedeemableSubscription,
 ) -> Result<TransactionRequest> {
-    let id = U256::from_be_slice(&subscription.id);
+    let id = U256::from_str_radix(subscription.id.trim_start_matches("0x"), 16)?;
     let tx;
     if subscription.category != Category::Trusted {
         tx = contract.redeem(id.into(), vec![].into());

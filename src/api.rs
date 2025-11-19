@@ -13,15 +13,8 @@ pub async fn get_redeemable(
     let current_timestamp = chrono::Utc::now().timestamp() as i32;
     match db::get_redeemable_subscriptions(&pool, current_timestamp).await {
         Ok(subscriptions) => Json(subscriptions),
-        Err(sqlx::Error::Database(db_err))
-            if db_err.code() == Some(std::borrow::Cow::Borrowed("42P01")) =>
-        {
-            // Table doesn't exist yet, return empty list
-            tracing::warn!("Database tables don't exist yet, returning empty list");
-            Json(Vec::new())
-        }
         Err(e) => {
-            // Log other database errors but don't panic
+            // Log database errors but don't panic (tables might not exist yet)
             tracing::error!("Database error: {}", e);
             Json(Vec::new())
         }
