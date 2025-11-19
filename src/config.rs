@@ -1,13 +1,13 @@
 use std::{env, str::FromStr};
 
 use alloy::signers::local::PrivateKeySigner;
-use sqlx::{PgPool, postgres::PgPoolOptions};
+use sqlx::{SqlitePool, sqlite::SqlitePoolOptions};
 
 // One hour on (gnosis chain).
 pub const STALE_BLOCK_THRESHOLD: u64 = 12 * 60;
 
 pub struct Config {
-    pub pool: PgPool,
+    pub pool: SqlitePool,
     pub redeemer: Option<PrivateKeySigner>,
     // Optional overrides:
     pub api_port: u16,
@@ -18,11 +18,11 @@ pub struct Config {
 impl Config {
     pub async fn from_env() -> Self {
         let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-        let pool = PgPoolOptions::new()
+        let pool = SqlitePoolOptions::new()
             .max_connections(2)
             .connect(&database_url)
             .await
-            .expect("Failed to connect to Postgres");
+            .expect("Failed to connect to SQLite");
         let redeemer_pk = env::var("REDEEMER_PK").ok();
         Self {
             pool,
