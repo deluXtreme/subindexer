@@ -6,7 +6,7 @@ use alloy::{
         bytes::{BufMut, BytesMut},
     },
     providers::{Provider, ProviderBuilder},
-    rpc::types::TransactionRequest,
+    rpc::types::{BlockId, TransactionRequest},
     signers::{SignerSync, local::PrivateKeySigner},
     sol,
 };
@@ -36,9 +36,13 @@ pub async fn eoa_multisend(
     let authorization = Authorization {
         chain_id: U256::from(provider.get_chain_id().await?),
         address: *contract.address(),
-        nonce: provider.get_transaction_count(pk.address()).await?,
+        nonce: provider
+            .get_transaction_count(pk.address())
+            .block_id(BlockId::pending())
+            .await?
+            + 1,
     };
-
+    tracing::info!("Authorization: {:?}", authorization);
     let signature = pk.sign_hash_sync(&authorization.signature_hash())?;
     let signed_authorization = authorization.into_signed(signature);
 

@@ -11,6 +11,8 @@ services:
       - postgres_data:/var/lib/postgresql
     ports:
       - 5440:5432
+    environment:
+      POSTGRES_PASSWORD: rindexer
     env_file:
       - ./.env
     healthcheck:
@@ -26,7 +28,6 @@ services:
         condition: service_healthy
     volumes:
       - .:/app/project_path
-      - /var/run/docker.sock:/var/run/docker.sock
     working_dir: /app/project_path
     command: [ "start", "indexer"]
     environment:

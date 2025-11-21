@@ -6,11 +6,11 @@ use alloy::{
     signers::local::PrivateKeySigner,
     sol,
 };
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use sqlx::PgPool;
 
 use circles_pathfinder::{FindPathParams, encode_redeem_trusted_data, prepare_flow_for_contract};
-use std::{error::Error, str::FromStr};
+use std::str::FromStr;
 
 use crate::{
     config::STALE_BLOCK_THRESHOLD,
@@ -22,11 +22,7 @@ use crate::{
 
 const EXPLORER_URL: &str = "https://gnosisscan.io/tx";
 
-pub async fn run_redeem_job(
-    rpc_url: &str,
-    pool: &PgPool,
-    signer: &PrivateKeySigner,
-) -> Result<(), Box<dyn Error>> {
+pub async fn run_redeem_job(rpc_url: &str, pool: &PgPool, signer: &PrivateKeySigner) -> Result<()> {
     tracing::info!("Running redeem job with signer: {:?}", signer.address());
     // Ensure indexer liveness.
     let blocks_behind = db::check_liveness(pool).await?;
@@ -38,10 +34,7 @@ pub async fn run_redeem_job(
 
     let current_timestamp = chrono::Utc::now().timestamp() as i32;
     let subscriptions = db::get_redeemable_subscriptions(pool, current_timestamp).await?;
-    tracing::info!("Found {} redeemable subscriptions", subscriptions.len());
-    let hash = redeem::redeem_payments(rpc_url, signer.clone(), subscriptions).await?;
-    tracing::info!("Redeemed at: {EXPLORER_URL}/{hash}");
-    Ok(())
+    redeem::redeem_payments(rpc_url, signer.clone(), subscriptions).await
 }
 
 sol!(
@@ -65,11 +58,6 @@ pub async fn redeem_singular(
         .connect_http(rpc_url.parse()?);
     let contract = SubscriptionModule::new(subscription_module, &provider);
     let tx = encode_tx(contract, subscription).await?;
-    tracing::info!(
-        "Redeeming: {}",
-        serde_json::to_string(&subscription).unwrap()
-    );
-
     let tx_hash = provider.send_transaction(tx).await?.watch().await?;
     Ok(tx_hash)
 }
@@ -97,12 +85,27 @@ pub async fn redeem_payments(
     rpc_url: &str,
     signer: PrivateKeySigner,
     subscriptions: Vec<RedeemableSubscription>,
-) -> Result<TxHash> {
-    match subscriptions.len() {
-        0 => Err(anyhow!("nothing to redeem")),
-        1 => Ok(redeem_singular(rpc_url, signer, &subscriptions[0]).await?),
-        _ => Ok(redeem_multi(rpc_url, signer, subscriptions).await?),
+) -> Result<()> {
+    if subscriptions.is_empty() {
+        tracing::info!("No subscriptions to redeem");
+        return Ok(());
     }
+    tracing::info!(
+        "Redeeming {} subscription(s): {}",
+        subscriptions.len(),
+        subscriptions
+            .iter()
+            .map(|s| format!("0x{}", hex::encode(&s.id)))
+            .collect::<Vec<String>>()
+            .join(", ")
+    );
+    let hash = if subscriptions.len() == 1 {
+        redeem_singular(rpc_url, signer, &subscriptions[0]).await?
+    } else {
+        redeem_multi(rpc_url, signer, subscriptions).await?
+    };
+    tracing::info!("Redeemed at: {EXPLORER_URL}/{hash}");
+    Ok(())
 }
 
 async fn encode_tx<P: Provider>(
