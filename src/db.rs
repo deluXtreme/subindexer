@@ -19,12 +19,11 @@ pub async fn get_redeemable_subscriptions(
 }
 
 async fn get_last_synced_block(pool: &SqlitePool) -> Result<u64, sqlx::Error> {
-    sqlx::query_scalar::<_, i64>(
-        "SELECT block FROM rindexer_internal_latest_block WHERE network = 'gnosis'",
-    )
-    .fetch_one(pool)
-    .await
-    .map(|result| result as u64)
+    // Minimum indexed block across all events.
+    sqlx::query_scalar::<_, i64>("SELECT min(indexed) FROM _event_block;")
+        .fetch_one(pool)
+        .await
+        .map(|result| result as u64)
 }
 
 // Returns number of blocks behind latest

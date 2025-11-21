@@ -6,10 +6,9 @@ A Rust API server that exposes redeemable subscription data.
 
 1. Create a `.env` file in the root directory with the content outlined in [.env.sample](./.env.sample).
 
-2. Populate Indexer Config & Run Database + Indexer
+2. Run Indexer Alone
 
 ```bash
-envsubst < rindexer.yaml.template > rindexer.yaml
 docker-compose up -d
 ```
 
@@ -20,6 +19,7 @@ Alternatively `make up`. See [Makefile](./.Makefile)
 ```bash
 # Local
 cargo run
+
 # Docker
 docker run --rm --env-file .env ghcr.io/deluXtreme/subindexer
 ```
@@ -55,6 +55,7 @@ make up
 Check for redeemable subscriptions:
 ```sh
 curl http://localhost:3030/redeemable | jq
+curl http://localhost:3030/subscriptions | jq
 ```
 
 Check health

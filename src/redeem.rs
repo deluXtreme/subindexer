@@ -44,8 +44,9 @@ pub async fn run_redeem_job(
 sol!(
     #[allow(missing_docs)]
     #[sol(rpc)]
-    SubscriptionModule,
-    "abis/SubscriptionModule.abi.json"
+    interface SubscriptionModule {
+        function redeem(bytes32 id, bytes calldata data) external;
+    }
 );
 
 const CIRCLES_RPC: &str = "https://rpc.aboutcircles.com/";
