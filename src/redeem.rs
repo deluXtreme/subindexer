@@ -7,7 +7,7 @@ use alloy::{
     sol,
 };
 use anyhow::Result;
-use sqlx::PgPool;
+use sqlx::SqlitePool;
 
 use circles_pathfinder::{FindPathParams, encode_redeem_trusted_data, prepare_flow_for_contract};
 use std::str::FromStr;
@@ -22,7 +22,11 @@ use crate::{
 
 const EXPLORER_URL: &str = "https://gnosisscan.io/tx";
 
-pub async fn run_redeem_job(rpc_url: &str, pool: &PgPool, signer: &PrivateKeySigner) -> Result<()> {
+pub async fn run_redeem_job(
+    rpc_url: &str,
+    pool: &SqlitePool,
+    signer: &PrivateKeySigner,
+) -> Result<()> {
     tracing::info!("Running redeem job with signer: {:?}", signer.address());
     // Ensure indexer liveness.
     let blocks_behind = db::check_liveness(pool).await?;
@@ -116,7 +120,7 @@ async fn encode_tx<P: Provider>(
     contract: SubscriptionModuleInstance<P>,
     subscription: &RedeemableSubscription,
 ) -> Result<TransactionRequest> {
-    let id = U256::from_be_slice(&subscription.id);
+    let id = U256::from_str_radix(subscription.id.trim_start_matches("0x"), 16)?;
     let tx;
     if subscription.category != Category::Trusted {
         tx = contract.redeem(id.into(), vec![].into());
