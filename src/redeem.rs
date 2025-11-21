@@ -67,15 +67,19 @@ async fn redeem_multi(
     signer: PrivateKeySigner,
     subscriptions: Vec<RedeemableSubscription>,
 ) -> Result<TxHash> {
-    let provider = ProviderBuilder::new()
-        // .wallet(signer)
-        .connect_http(rpc_url.parse()?);
-    // TODO: encode calls.
+    let provider = ProviderBuilder::new().connect_http(rpc_url.parse()?);
+    // TODO: this could be constructed asynchronously. Might be rate limited by the RPC.
+    // futures::future::try_join_all
+    // subscriptions.iter().map(|rs| async {
+    //     let sub_mod = rs.contract_address.parse()?;
+    //     let contract = SubscriptionModule::new(sub_mod, &provider);
+    //     encode_tx(contract, rs).await
+    // })
     let mut tx_requests = vec![];
     for rs in subscriptions.iter() {
-        let sub_mod = rs.contract_address.parse().unwrap();
+        let sub_mod = rs.contract_address.parse()?;
         let contract = SubscriptionModule::new(sub_mod, &provider);
-        let tx_data = encode_tx(contract, rs).await.unwrap();
+        let tx_data = encode_tx(contract, rs).await?;
         tx_requests.push(tx_data);
     }
     eoa_multisend(rpc_url, signer, tx_requests).await
