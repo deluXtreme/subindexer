@@ -1,12 +1,8 @@
 services:
   indexer:
-    build:
-      context: .
-      dockerfile: Dockerfile.indexer
+    image: ghcr.io/bh2smith/arak:main
     volumes:
       - .:/app/project_path
     working_dir: /app/project_path
-    entrypoint: ["/app/rindexer"]
-    command: ["start", "indexer"]
-    environment:
-      DATABASE_URL: rindexer.db
+    entrypoint: ["/usr/bin/tini", "--"]
+    command: ["/opt/arak/arak"]

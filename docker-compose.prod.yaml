@@ -4,21 +4,19 @@ volumes:
 
 services:
   indexer:
-    image: ghcr.io/bh2smith/rindexer:sha-c0ea448eaabbff6a331c6538fae3016702e53817
+    image: ghcr.io/bh2smith/arak:main
     volumes:
       - sqlite_data:/app/data
-    working_dir: /app
-    entrypoint: ["/app/rindexer"]
-    command: [ "start", "indexer"]
-    environment:
-      DATABASE_URL: /app/data/rindexer.db
+    working_dir: /app/data
+    entrypoint: ["/usr/bin/tini", "--"]
+    command: ["/opt/arak/arak"]
 
   api:
     image: ghcr.io/deluxtreme/subindexer:latest
     volumes:
       - sqlite_data:/app/data
     environment:
-      DATABASE_URL: /app/data/rindexer.db
+      DATABASE_URL: /app/data/arak.db
       REDEEMER_PK: ${REDEEMER_PK}
       API_PORT: ${API_PORT:-3000}
       REDEEM_INTERVAL: ${REDEEM_INTERVAL:-3600}

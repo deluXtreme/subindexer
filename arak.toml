@@ -1,0 +1,33 @@
+
+ethrpc = "http://gnosis-erigon.dappnode:8545"
+
+[database.sqlite]
+connection = "file:arak.db"
+
+[indexer]
+page-size = 2000
+poll-interval = 1
+
+[[event]]
+name = "subscription_created"
+start = 41149803
+contract = "0xcebe4b6d50ce877a9689ce4516fe96911e099a78"
+signature = "event SubscriptionCreated(bytes32 indexed id, address indexed subscriber, address indexed recipient, uint256 amount, uint256 frequency, uint8 category, uint256 creationTimestamp)"
+
+[[event]]
+name = "redeemed"
+start = 41149803
+contract = "0xcebe4b6d50ce877a9689ce4516fe96911e099a78"
+signature = "event Redeemed(bytes32 indexed id, address indexed subscriber, address indexed recipient, uint256 nextRedeemAt)"
+
+[[event]]
+name = "recipient_updated"
+start = 41149803
+contract = "0xcebe4b6d50ce877a9689ce4516fe96911e099a78"
+signature = "event RecipientUpdated(bytes32 indexed id, address indexed oldRecipient, address indexed newRecipient)"
+
+[[event]]
+name = "unsubscribed"
+start = 41149803
+contract = "0xcebe4b6d50ce877a9689ce4516fe96911e099a78"
+signature = "event Unsubscribed(bytes32 indexed id, address indexed subscriber)"

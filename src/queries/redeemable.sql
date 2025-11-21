@@ -1,19 +1,19 @@
 WITH
     active_subscriptions as (
         SELECT
-            active.contract_address,
-            active.id,
-            active.subscriber,
-            recipient,
-            amount,
-            category,
-            frequency,
+            active.address as contract_address,
+            active.id_0 as id,
+            active.subscriber_1 as subscriber,
+            recipient_2 as recipient,
+            amount_3 as amount,
+            category_5 as category,
+            frequency_4 as frequency,
             CAST(strftime('%s', 'now') AS INTEGER) as right_meow,
-            creation_timestamp
-        FROM subindexer_subscription_module_subscription_created active
-                 LEFT JOIN subindexer_subscription_module_unsubscribed canceled
-                           ON active.id = canceled.id
-        WHERE canceled.id IS NULL
+            creationTimestamp_6 as creation_timestamp
+        FROM subscription_created active
+                 LEFT JOIN unsubscribed canceled
+                           ON active.id_0 = canceled.id_0
+        WHERE canceled.id_0 IS NULL
     ),
     latest_redemptions AS (
         SELECT
@@ -21,10 +21,10 @@ WITH
             next_redeem_at
         FROM (
             SELECT
-                id,
-                next_redeem_at,
-                ROW_NUMBER() OVER (PARTITION BY id ORDER BY next_redeem_at DESC) as rn
-            FROM subindexer_subscription_module_redeemed
+                id_0 as id,
+                nextRedeemAt_3 as next_redeem_at,
+                ROW_NUMBER() OVER (PARTITION BY id_0 ORDER BY nextRedeemAt_3 DESC) as rn
+            FROM redeemed
         )
         WHERE rn = 1
     ),
@@ -34,10 +34,10 @@ WITH
             new_recipient
         FROM (
             SELECT
-                id,
-                new_recipient,
-                ROW_NUMBER() OVER (PARTITION BY id ORDER BY block_number DESC) as rn
-            FROM subindexer_subscription_module_recipient_updated
+                id_0 as id,
+                newRecipient_2 as new_recipient,
+                ROW_NUMBER() OVER (PARTITION BY id_0 ORDER BY block_number DESC) as rn
+            FROM recipient_updated
         )
         WHERE rn = 1
     ),
