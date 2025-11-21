@@ -105,9 +105,9 @@ pub async fn redeem_payments(
     }
 }
 
-async fn encode_tx<'a, P: Provider + 'a>(
+async fn encode_tx<P: Provider>(
     contract: SubscriptionModuleInstance<P>,
-    subscription: &'a RedeemableSubscription,
+    subscription: &RedeemableSubscription,
 ) -> Result<TransactionRequest> {
     let id = U256::from_be_slice(&subscription.id);
     let tx;
