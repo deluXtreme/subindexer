@@ -1,6 +1,7 @@
 mod api;
 mod config;
 mod db;
+mod eip7702;
 mod models;
 mod redeem;
 
