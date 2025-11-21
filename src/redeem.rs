@@ -1,27 +1,28 @@
 use alloy::{
     hex,
-    primitives::{Address, U256, aliases::U192},
-    providers::ProviderBuilder,
+    primitives::{Address, TxHash, U256, aliases::U192},
+    providers::{Provider, ProviderBuilder},
+    rpc::types::TransactionRequest,
     signers::local::PrivateKeySigner,
     sol,
 };
+use anyhow::Result;
 use sqlx::PgPool;
 
 use circles_pathfinder::{FindPathParams, encode_redeem_trusted_data, prepare_flow_for_contract};
-use std::{error::Error, str::FromStr};
+use std::str::FromStr;
 
 use crate::{
     config::STALE_BLOCK_THRESHOLD,
     db,
+    eip7702::eoa_multisend,
     models::{Category, RedeemableSubscription},
-    redeem,
+    redeem::{self, SubscriptionModule::SubscriptionModuleInstance},
 };
 
-pub async fn run_redeem_job(
-    rpc_url: &str,
-    pool: &PgPool,
-    signer: &PrivateKeySigner,
-) -> Result<(), Box<dyn Error>> {
+const EXPLORER_URL: &str = "https://gnosisscan.io/tx";
+
+pub async fn run_redeem_job(rpc_url: &str, pool: &PgPool, signer: &PrivateKeySigner) -> Result<()> {
     tracing::info!("Running redeem job with signer: {:?}", signer.address());
     // Ensure indexer liveness.
     let blocks_behind = db::check_liveness(pool).await?;
@@ -33,11 +34,7 @@ pub async fn run_redeem_job(
 
     let current_timestamp = chrono::Utc::now().timestamp() as i32;
     let subscriptions = db::get_redeemable_subscriptions(pool, current_timestamp).await?;
-    tracing::info!("Found {} redeemable subscriptions", subscriptions.len());
-    for subscription in subscriptions {
-        redeem::redeem_payment(rpc_url, signer.clone(), subscription).await?;
-    }
-    Ok(())
+    redeem::redeem_payments(rpc_url, signer.clone(), subscriptions).await
 }
 
 sol!(
@@ -49,25 +46,80 @@ sol!(
 
 const CIRCLES_RPC: &str = "https://rpc.aboutcircles.com/";
 
-pub async fn redeem_payment(
+pub async fn redeem_singular(
     rpc_url: &str,
     signer: PrivateKeySigner,
-    subscription: RedeemableSubscription,
-) -> Result<bool, Box<dyn std::error::Error>> {
+    subscription: &RedeemableSubscription,
+) -> Result<TxHash> {
     let subscription_module = subscription.contract_address.parse::<Address>().unwrap();
 
     let provider = ProviderBuilder::new()
         .wallet(signer)
         .connect_http(rpc_url.parse()?);
-    let contract = SubscriptionModule::new(subscription_module, provider);
+    let contract = SubscriptionModule::new(subscription_module, &provider);
+    let tx = encode_tx(contract, subscription).await?;
+    let tx_hash = provider.send_transaction(tx).await?.watch().await?;
+    Ok(tx_hash)
+}
+
+async fn redeem_multi(
+    rpc_url: &str,
+    signer: PrivateKeySigner,
+    subscriptions: Vec<RedeemableSubscription>,
+) -> Result<TxHash> {
+    let provider = ProviderBuilder::new().connect_http(rpc_url.parse()?);
+    // TODO: this could be constructed asynchronously. Might be rate limited by the RPC.
+    // futures::future::try_join_all
+    // subscriptions.iter().map(|rs| async {
+    //     let sub_mod = rs.contract_address.parse()?;
+    //     let contract = SubscriptionModule::new(sub_mod, &provider);
+    //     encode_tx(contract, rs).await
+    // })
+    let mut tx_requests = vec![];
+    for rs in subscriptions.iter() {
+        let sub_mod = rs.contract_address.parse()?;
+        let contract = SubscriptionModule::new(sub_mod, &provider);
+        let tx_data = encode_tx(contract, rs).await?;
+        tx_requests.push(tx_data);
+    }
+    eoa_multisend(rpc_url, signer, tx_requests).await
+}
+
+pub async fn redeem_payments(
+    rpc_url: &str,
+    signer: PrivateKeySigner,
+    subscriptions: Vec<RedeemableSubscription>,
+) -> Result<()> {
+    if subscriptions.is_empty() {
+        tracing::info!("No subscriptions to redeem");
+        return Ok(());
+    }
+    tracing::info!(
+        "Redeeming {} subscription(s): {}",
+        subscriptions.len(),
+        subscriptions
+            .iter()
+            .map(|s| format!("0x{}", hex::encode(&s.id)))
+            .collect::<Vec<String>>()
+            .join(", ")
+    );
+    let hash = if subscriptions.len() == 1 {
+        redeem_singular(rpc_url, signer, &subscriptions[0]).await?
+    } else {
+        redeem_multi(rpc_url, signer, subscriptions).await?
+    };
+    tracing::info!("Redeemed at: {EXPLORER_URL}/{hash}");
+    Ok(())
+}
+
+async fn encode_tx<P: Provider>(
+    contract: SubscriptionModuleInstance<P>,
+    subscription: &RedeemableSubscription,
+) -> Result<TransactionRequest> {
     let id = U256::from_be_slice(&subscription.id);
     let tx;
-    tracing::info!(
-        "Redeeming: {}",
-        serde_json::to_string(&subscription).unwrap()
-    );
     if subscription.category != Category::Trusted {
-        tx = contract.redeem(id.into(), vec![].into()).send().await?;
+        tx = contract.redeem(id.into(), vec![].into());
     } else {
         let amount = U192::from_str(&subscription.amount)?;
         let periods = U192::from(subscription.periods as u64);
@@ -96,12 +148,7 @@ pub async fn redeem_payment(
             path_data.source_coordinate,
         );
         tracing::debug!("Encoded CallData: 0x{}", hex::encode(&data));
-        tx = contract.redeem(id.into(), data.into()).send().await?;
+        tx = contract.redeem(id.into(), data.into());
     }
-    tracing::info!(
-        "Redeemed 0x{} at: https://gnosisscan.io/tx/{}",
-        hex::encode(subscription.id),
-        tx.tx_hash()
-    );
-    Ok(true)
+    Ok(tx.into_transaction_request())
 }
