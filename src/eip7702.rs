@@ -42,7 +42,7 @@ pub async fn eoa_multisend(
             .await?
             + 1,
     };
-    tracing::info!("Authorization: {:?}", authorization);
+
     let signature = pk.sign_hash_sync(&authorization.signature_hash())?;
     let signed_authorization = authorization.into_signed(signature);
 
@@ -57,10 +57,7 @@ pub async fn eoa_multisend(
         .with_input(execute_calldata);
 
     // Send the transaction and wait for the broadcast.
-    let pending_tx = provider.send_transaction(tx).await?;
-
-    println!("Pending transaction... {}", pending_tx.tx_hash());
-    let receipt = pending_tx.get_receipt().await?;
+    let receipt = provider.send_transaction(tx).await?.get_receipt().await?;
 
     Ok(receipt.transaction_hash)
 }
