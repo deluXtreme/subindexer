@@ -52,7 +52,8 @@ pub async fn health_check(State(pool): State<SqlitePool>) -> Json<serde_json::Va
     Json(serde_json::json!({
         "status": if db_healthy && !stale { "healthy" } else { "unhealthy" },
         "database": if db_healthy { "connected" } else { "disconnected" },
-        "live": stale,
+        "live": !stale,
+        "blocks_behind": blocks_behind,
         "timestamp": chrono::Utc::now().to_rfc3339()
     }))
 }
