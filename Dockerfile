@@ -14,9 +14,17 @@ RUN apt-get update && apt-get install -y ca-certificates libsqlite3-0 && rm -rf 
 
 COPY --from=builder /usr/src/app/target/release/subindexer /usr/local/bin/subindexer
 
+# Copy seed database for initialization
+COPY arak.db /opt/seed/arak.db
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 ENV RUST_LOG=info
 ENV PORT=8080
 
 EXPOSE 8080
 
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["subindexer"] 
