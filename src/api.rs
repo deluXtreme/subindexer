@@ -46,7 +46,7 @@ pub async fn get_subscriptions(
 
 pub async fn health_check(State(pool): State<SqlitePool>) -> Json<serde_json::Value> {
     // Test database connectivity
-    let db_healthy = (sqlx::query("SELECT 1").execute(&pool).await).is_ok();
+    let db_healthy = sqlx::query("SELECT 1").execute(&pool).await.is_ok();
     let blocks_behind = db::check_liveness(&pool).await.unwrap_or(u64::MAX);
     let stale = blocks_behind > STALE_BLOCK_THRESHOLD;
     Json(serde_json::json!({

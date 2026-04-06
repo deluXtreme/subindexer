@@ -17,7 +17,7 @@ use crate::{
     db,
     eip7702::eoa_multisend,
     models::{Category, RedeemableSubscription},
-    redeem::{self, SubscriptionModule::SubscriptionModuleInstance},
+    redeem::SubscriptionModule::SubscriptionModuleInstance,
 };
 
 const EXPLORER_URL: &str = "https://gnosisscan.io/tx";
@@ -38,7 +38,7 @@ pub async fn run_redeem_job(
 
     let current_timestamp = chrono::Utc::now().timestamp() as i32;
     let subscriptions = db::get_redeemable_subscriptions(pool, current_timestamp).await?;
-    redeem::redeem_payments(rpc_url, signer.clone(), subscriptions).await
+    redeem_payments(rpc_url, signer.clone(), subscriptions).await
 }
 
 sol!(

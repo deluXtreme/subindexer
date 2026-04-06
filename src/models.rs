@@ -82,3 +82,94 @@ impl<'r> sqlx::Decode<'r, sqlx::Sqlite> for Category {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[sqlx::test]
+    async fn test_redeemable_subscription_from_row(pool: sqlx::SqlitePool) {
+        sqlx::query(
+            "CREATE TABLE test_subs (
+                contract_address TEXT, id TEXT, recipient TEXT,
+                subscriber TEXT, amount TEXT, periods INTEGER, category TEXT
+            )",
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        sqlx::query("INSERT INTO test_subs VALUES (?,?,?,?,?,?,?)")
+            .bind("0x1234567890123456789012345678901234567890")
+            .bind("0x0000000000000000000000000000000000000000000000000000000000000001")
+            .bind("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef")
+            .bind("0xcafecafecafecafecafecafecafecafecafecafe")
+            .bind("1000000000000000000")
+            .bind(3i32)
+            .bind("trusted")
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        let sub = sqlx::query_as::<_, RedeemableSubscription>("SELECT * FROM test_subs")
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+
+        assert_eq!(
+            sub.contract_address,
+            Address::from_str("0x1234567890123456789012345678901234567890").unwrap()
+        );
+        assert_eq!(
+            sub.id,
+            B256::from_str("0x0000000000000000000000000000000000000000000000000000000000000001")
+                .unwrap()
+        );
+        assert_eq!(
+            sub.recipient,
+            Address::from_str("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef").unwrap()
+        );
+        assert_eq!(
+            sub.subscriber,
+            Address::from_str("0xcafecafecafecafecafecafecafecafecafecafe").unwrap()
+        );
+        assert_eq!(sub.amount, "1000000000000000000");
+        assert_eq!(sub.periods, 3);
+        assert_eq!(sub.category, Category::Trusted);
+    }
+
+    #[sqlx::test]
+    async fn test_category_numeric_decode(pool: sqlx::SqlitePool) {
+        sqlx::query("CREATE TABLE test_cat (category TEXT)")
+            .execute(&pool)
+            .await
+            .unwrap();
+
+        for (value, expected) in [
+            ("0", Category::Trusted),
+            ("1", Category::Untrusted),
+            ("2", Category::Group),
+        ] {
+            sqlx::query("INSERT INTO test_cat VALUES (?)")
+                .bind(value)
+                .execute(&pool)
+                .await
+                .unwrap();
+
+            let cat = sqlx::query_scalar::<_, Category>(
+                "SELECT category FROM test_cat WHERE category = ?",
+            )
+            .bind(value)
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+
+            assert_eq!(cat, expected);
+
+            sqlx::query("DELETE FROM test_cat")
+                .execute(&pool)
+                .await
+                .unwrap();
+        }
+    }
+}
