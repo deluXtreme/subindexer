@@ -1,6 +1,6 @@
 use alloy::{
     hex,
-    primitives::{Address, TxHash, U256, aliases::U192},
+    primitives::{TxHash, U256},
     providers::{Provider, ProviderBuilder},
     rpc::types::TransactionRequest,
     signers::local::PrivateKeySigner,
@@ -17,7 +17,7 @@ use crate::{
     db,
     eip7702::eoa_multisend,
     models::{Category, RedeemableSubscription},
-    redeem::{self, SubscriptionModule::SubscriptionModuleInstance},
+    redeem::SubscriptionModule::SubscriptionModuleInstance,
 };
 
 const EXPLORER_URL: &str = "https://gnosisscan.io/tx";
@@ -38,7 +38,7 @@ pub async fn run_redeem_job(
 
     let current_timestamp = chrono::Utc::now().timestamp() as i32;
     let subscriptions = db::get_redeemable_subscriptions(pool, current_timestamp).await?;
-    redeem::redeem_payments(rpc_url, signer.clone(), subscriptions).await
+    redeem_payments(rpc_url, signer.clone(), subscriptions).await
 }
 
 sol!(
@@ -56,12 +56,10 @@ pub async fn redeem_singular(
     signer: PrivateKeySigner,
     subscription: &RedeemableSubscription,
 ) -> Result<TxHash> {
-    let subscription_module = subscription.contract_address.parse::<Address>().unwrap();
-
     let provider = ProviderBuilder::new()
         .wallet(signer)
         .connect_http(rpc_url.parse()?);
-    let contract = SubscriptionModule::new(subscription_module, &provider);
+    let contract = SubscriptionModule::new(subscription.contract_address, &provider);
     let tx = encode_tx(contract, subscription).await?;
     let tx_hash = provider.send_transaction(tx).await?.watch().await?;
     Ok(tx_hash)
@@ -82,8 +80,7 @@ async fn redeem_multi(
     // })
     let mut tx_requests = vec![];
     for rs in subscriptions.iter() {
-        let sub_mod = rs.contract_address.parse()?;
-        let contract = SubscriptionModule::new(sub_mod, &provider);
+        let contract = SubscriptionModule::new(rs.contract_address, &provider);
         let tx_data = encode_tx(contract, rs).await?;
         tx_requests.push(tx_data);
     }
@@ -104,7 +101,7 @@ pub async fn redeem_payments(
         subscriptions.len(),
         subscriptions
             .iter()
-            .map(|s| format!("0x{}", hex::encode(&s.id)))
+            .map(|s| format!("0x{}", hex::encode(s.id)))
             .collect::<Vec<String>>()
             .join(", ")
     );
@@ -121,22 +118,24 @@ async fn encode_tx<P: Provider>(
     contract: SubscriptionModuleInstance<P>,
     subscription: &RedeemableSubscription,
 ) -> Result<TransactionRequest> {
-    let id = U256::from_str_radix(subscription.id.trim_start_matches("0x"), 16)?;
     let tx;
     if subscription.category != Category::Trusted {
-        tx = contract.redeem(id.into(), vec![].into());
+        tx = contract.redeem(subscription.id, vec![].into());
     } else {
-        let amount = U192::from_str(&subscription.amount)?;
-        let periods = U192::from(subscription.periods as u64);
+        let amount = U256::from_str(&subscription.amount)?;
+        let periods = U256::from(subscription.periods as u64);
         let params = FindPathParams {
-            from: subscription.subscriber.parse::<Address>()?,
-            to: subscription.recipient.parse::<Address>()?,
+            from: subscription.subscriber,
+            to: subscription.recipient,
             target_flow: amount * periods,
-            use_wrapped_balances: Some(true),
+            use_wrapped_balances: Some(false),
             from_tokens: None,
             to_tokens: None,
             exclude_from_tokens: None,
             exclude_to_tokens: None,
+            simulated_balances: None,
+            simulated_trusts: None,
+            max_transfers: None,
         };
 
         // This automatically:
@@ -153,7 +152,7 @@ async fn encode_tx<P: Provider>(
             path_data.source_coordinate,
         );
         tracing::debug!("Encoded CallData: 0x{}", hex::encode(&data));
-        tx = contract.redeem(id.into(), data.into());
+        tx = contract.redeem(subscription.id, data.into());
     }
     Ok(tx.into_transaction_request())
 }

@@ -1,4 +1,4 @@
-FROM rust:1.88.0-slim-bullseye AS builder
+FROM rust:1.96.0-slim-bullseye AS builder
 
 WORKDIR /usr/src/app
 
